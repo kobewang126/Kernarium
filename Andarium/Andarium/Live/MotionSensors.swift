@@ -288,7 +288,10 @@ private final class CoreMotionDevice: MotionDevice, @unchecked Sendable {
             magnetometer: manager.isMagnetometerAvailable, deviceMotion: manager.isDeviceMotionAvailable,
             northFrame: { CMMotionManager.availableAttitudeReferenceFrames().contains(.xMagneticNorthZVertical) },
             authorization: {
+                // Enable with an iOS 27.2 SDK; older SDKs cannot type-check this API.
+                #if ANDARIUM_MOTION_AUTHORIZATION_API
                 if #available(iOS 27.2, *) { return CMMotionManager.authorizationStatus }
+                #endif
                 return nil
             })
         #if !APP_STORE

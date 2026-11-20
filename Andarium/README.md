@@ -163,6 +163,11 @@ the accepted release against its manifest and layout and stages the system
 disk, partition layout, kernel command line and manifest into
 `.build/andarium-system`, which the application bundles as it stands.
 
+Building with an iOS 27.2 SDK can enable
+`ANDARIUM_MOTION_AUTHORIZATION_API` in the Swift compilation conditions to
+read the motion authorization status. Older SDKs use the compass's existing
+fallback for systems that do not report that status.
+
 The `AndariumTests` bundle runs hosted in the application on an iPad, in the
 iOS Simulator or, as an iPad app, on an Apple silicon Mac (whose derived data
 must be outside the temporary directories,
