@@ -1,6 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Produce the mainline Linux starter artifacts on a native arm64 Linux host.
+# Produce mainline Linux starter disks and cross-compiled boot archives.
 set -eu
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -37,7 +37,8 @@ usage()
 Usage: tools/rootfs/starter/build-all.sh --work PATH --output PATH [--jobs N]
        [--product NAME]...
 
-Run as an ordinary user with passwordless sudo on native arm64 Linux. PATHs
+Run as an ordinary user with passwordless sudo on Linux. Disk products require
+native arm64; boot-base products also support x86_64 build hosts. PATHs
 must be absolute and distinct outside the source tree. The output path must
 not exist; the completed release directory is published atomically.
 
@@ -112,8 +113,19 @@ wants()
 	return 1
 }
 
-producer_require_host aarch64 chroot cpio curl debootstrap e2fsck gzip make \
-	mkfs.ext4 python3 resize2fs sgdisk sha256sum sudo tar
+if wants alpine || wants debian-13-minimal || wants debian-13-plasma-wayland || \
+	wants debian-13-minimal-armhf; then
+	producer_require_host aarch64 chroot cpio curl debootstrap e2fsck gzip make \
+		mkfs.ext4 python3 resize2fs sgdisk sha256sum sudo tar
+else
+	# Buildroot executes only native build tools while cross-compiling the
+	# static target programs; no target chroot is needed for these products.
+	case "$(uname -m)" in
+	aarch64|x86_64) ;;
+	*) fail "boot bases require an aarch64 or x86_64 build host" ;;
+	esac
+	producer_require_host "$(uname -m)" cpio curl gzip make python3 sha256sum sudo tar
+fi
 if wants debian-13-minimal-armhf; then
 	sudo -n -- sh "$SCRIPT_DIR/armhf-run.sh" --check
 fi
@@ -237,8 +249,8 @@ prepare_busybox_config()
 }
 
 # The base archive holds only the static tools a per-run /init needs; the
-# launcher appends that /init. Buildroot builds its own cross toolchain, so
-# this aarch64 host also produces the archive for x86_64-userspace guests.
+# launcher appends that /init. Buildroot builds its own cross toolchain for
+# either supported target architecture.
 build_boot_base()
 {
 	architecture=$1

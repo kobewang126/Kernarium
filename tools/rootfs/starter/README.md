@@ -35,7 +35,7 @@ enlarged it, and a growth failure is only a warning (the mechanics are in
 
 ## Building
 
-The producer runs natively on arm64 Linux and requires `sudo`, Buildroot's
+The disk producer runs natively on arm64 Linux and requires `sudo`, Buildroot's
 ordinary build prerequisites, `debootstrap`, `e2fsprogs`, GPT fdisk, and
 `qemu-user` for the armhf image. It downloads pinned Buildroot and Alpine
 inputs and current Debian 13 packages. A container host is sufficient only when
@@ -51,6 +51,9 @@ tools/rootfs/starter/build-all.sh \
 `release-manifest.json` and the adjacent package inventories record the exact
 inputs and results. Build trees and release artifacts stay outside the source
 tree.
+
+Boot-base products also build on x86_64 Linux through Buildroot's cross
+toolchain, without `debootstrap` or disk-image tools.
 
 Disk capacity is host policy. `grow-image.py` transactionally enlarges a copy
 and its sole GPT partition and never changes the filesystem; the next boot
