@@ -304,7 +304,8 @@ variables when Apple's compiler lacks it (companion LLVM tools must match its
 family).
 
 Linux cross-builds use native Linux host headers and host tools, while the
-target compiler still emits arm64 ELF and consumes the Darwin SDK headers for
+target compiler still emits arm64 ELF with `-mno-outline-atomics` and consumes
+the Darwin SDK headers for
 the host-facing bridge. Supply that SDK through `DARWIN_SDKROOT` and a native
 verified host-tools prefix; the macOS compatibility headers are not injected
 into Linux host tools.

@@ -62,6 +62,8 @@ configure rejects an artifact whose identity differs from `identity.env`.
 `bridge_imports.py` owns the import policy. A kernel image imports exactly
 the declared `darwin_uml_*` functions, less those `import-policy.tsv` limits
 to the arm64 slice, and never Darwin's process-wide `sigprocmask` or variadic
-`fcntl`. Every kernel build runs `bridge_imports.py --kernel-binary` on its
+`fcntl`, or AArch64 outline-atomic helpers. Linux cross compilers must inline
+the host-facing atomics with `-mno-outline-atomics`. Every kernel build runs
+`bridge_imports.py --kernel-binary` on its
 image, the artifact verifier applies the same check to each bundle, and
 `--print-expected` lists the set for a slice.

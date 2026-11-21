@@ -398,6 +398,17 @@ def verify_kernel_elf_contract(module: ModuleType, root: Path) -> None:
         check(kernel_elf([*active, symbol]), f"the Linux image imports {description}")
     check(kernel_elf([*active, "pthread_sigmask"]), None)
 
+    # Linux-target Clang generated these helpers in a cross-built image.
+    # Accepting it would defer a deterministic loader failure until launch.
+    for symbol in (
+        "__aarch64_cas4_acq_rel", "__aarch64_cas8_acq_rel",
+        "__aarch64_cas8_relax", "__aarch64_ldadd4_rel",
+        "__aarch64_ldset4_rel", "__aarch64_swp4_acq",
+        "__aarch64_swp4_acq_rel", "__aarch64_swp8_relax",
+    ):
+        check(kernel_elf([*active, symbol]),
+              "the Linux image imports an unsupported AArch64 outline-atomic helper")
+
     # Kernel builds run the module's command line on the image they built. The
     # copy in the fixture directory reads the fixture declarations and policy.
     command_line = abi / "bridge_imports.py"

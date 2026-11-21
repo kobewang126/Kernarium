@@ -35,6 +35,12 @@ FORBIDDEN_IMPORTS = (
     # kernel's host objects pass them in registers, so a direct fcntl() hands
     # libc an arbitrary third argument; host code calls darwin_uml_fcntl().
     (re.compile(r"_?fcntl(?:\$.*)?"), "the variadic Darwin fcntl"),
+    # Linux-target cross compilers may outline C atomics into compiler-rt
+    # helpers. The Darwin loader supplies none of those Linux ABI functions;
+    # compile the host-facing objects with -mno-outline-atomics instead.
+    (re.compile(r"__aarch64_(?:cas|swp|ldadd|ldclr|ldeor|ldset)[0-9]+_"
+                r"(?:relax|acq|rel|acq_rel|sync)"),
+     "an unsupported AArch64 outline-atomic helper"),
 )
 
 SHT_SYMTAB = 2
