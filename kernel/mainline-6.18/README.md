@@ -303,6 +303,12 @@ Kbuild; select a compatible upstream LLVM through the documented `UML_KERNEL_*`
 variables when Apple's compiler lacks it (companion LLVM tools must match its
 family).
 
+Linux cross-builds use native Linux host headers and host tools, while the
+target compiler still emits arm64 ELF and consumes the Darwin SDK headers for
+the host-facing bridge. Supply that SDK through `DARWIN_SDKROOT` and a native
+verified host-tools prefix; the macOS compatibility headers are not injected
+into Linux host tools.
+
 Every kernel generates BTF, so the build needs pahole (v1.29 or newer) and a
 static libelf from the `kernel-host-tools` dependency product
 ([dependencies README](../../dependencies/README.md)). The build never searches

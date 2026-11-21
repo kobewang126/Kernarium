@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Publish a staged directory with one of Darwin's atomic renames.
+"""Publish a staged directory with an exclusive atomic rename or exchange.
 
 Without --swap the rename is exclusive (RENAME_EXCL): creating DESTINATION
 and moving SOURCE there are one operation, so it never replaces, or moves
@@ -44,10 +44,25 @@ def main(argv: list[str]) -> int:
         return 2
 
     libc = ctypes.CDLL(None, use_errno=True)
-    rename = libc.renamex_np
-    rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    if sys.platform == "darwin":
+        rename = libc.renamex_np
+        rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        arguments = (os.fsencode(source), os.fsencode(destination), flags)
+    elif sys.platform.startswith("linux"):
+        # Linux gives the same guarantees with RENAME_NOREPLACE (1) and
+        # RENAME_EXCHANGE (2). AT_FDCWD keeps relative paths relative to the
+        # caller, exactly as renamex_np does on Darwin.
+        rename = libc.renameat2
+        rename.argtypes = [ctypes.c_int, ctypes.c_char_p,
+                           ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+        arguments = (-100, os.fsencode(source), -100, os.fsencode(destination),
+                     2 if flags == RENAME_SWAP else 1)
+    else:
+        print(f"atomic directory publication is unsupported on {sys.platform}",
+              file=sys.stderr)
+        return 2
     rename.restype = ctypes.c_int
-    if rename(os.fsencode(source), os.fsencode(destination), flags) == 0:
+    if rename(*arguments) == 0:
         return 0
 
     error = ctypes.get_errno()

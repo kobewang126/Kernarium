@@ -43,8 +43,9 @@ the build refuses a configuration that lacks a symbol of
 config/android-required-builtins.txt or has one of
 config/android-forbidden-options.txt. Its kernel is published in the
 android-6.18 artifact family.
-The output directory must be outside the Linux source tree. Darwin host-tool
-compatibility is injected from kernel/mainline-6.18/build/toolchain/darwin-host.
+The output directory must be outside the Linux source tree. On macOS, host-tool
+compatibility is injected from kernel/mainline-6.18/build/toolchain/darwin-host;
+Linux cross-builds use native host headers and a matching host-tools prefix.
 macOS, iOS Simulator, and physical iOS all use the same constrained native
 address-space profile. An omitted jobs value uses all online host processors.
 The source is always read from the required, Git-ignored
@@ -223,9 +224,16 @@ run_make()
 	host_include="$LINE_ROOT/build/toolchain/darwin-host/include"
 	host_tool_bin="$LINE_ROOT/build/toolchain/darwin-host/bin"
 	host_tools_include="$UML_KERNEL_HOST_TOOLS_PREFIX/include"
-	host_uapi_flags="-I$host_include -I$host_tools_include -idirafter $BUILD_DIR/arch/arm64/include/generated/uapi -idirafter $SOURCE_DIR/arch/arm64/include/uapi -idirafter $SOURCE_DIR/include/uapi -idirafter $BUILD_DIR/include/generated/uapi"
-	host_cflags="-include $host_compat $host_uapi_flags $UML_KERNEL_EXTRA_HOST_CFLAGS"
-	host_cxxflags="$host_uapi_flags $UML_KERNEL_EXTRA_HOST_CXXFLAGS"
+	if [ "$(uname -s)" = Darwin ]; then
+		host_uapi_flags="-I$host_include -I$host_tools_include -idirafter $BUILD_DIR/arch/arm64/include/generated/uapi -idirafter $SOURCE_DIR/arch/arm64/include/uapi -idirafter $SOURCE_DIR/include/uapi -idirafter $BUILD_DIR/include/generated/uapi"
+		host_cflags="-include $host_compat $host_uapi_flags $UML_KERNEL_EXTRA_HOST_CFLAGS"
+		host_cxxflags="$host_uapi_flags $UML_KERNEL_EXTRA_HOST_CXXFLAGS"
+	else
+		# Cross-building on Linux uses native Linux host tools. Darwin's
+		# compatibility headers would shadow glibc's endian/ELF headers.
+		host_cflags="-I$host_tools_include $UML_KERNEL_EXTRA_HOST_CFLAGS"
+		host_cxxflags="-I$host_tools_include $UML_KERNEL_EXTRA_HOST_CXXFLAGS"
+	fi
 	# resolve_btfids asks pkg-config for libelf; only the pinned prefix may
 	# answer, and the library path serves a host without pkg-config.
 	set -- "HOSTCFLAGS=$host_cflags" "HOSTCXXFLAGS=$host_cxxflags" \
