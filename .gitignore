@@ -63,3 +63,5 @@ CMakeUserPresets.json
 # developer-owned migration input and must not be deleted or committed.
 /kernel/source-location.conf
 /kernel/mainline-6.18/source-location.conf
+
+/Toucharium/Config/Publication.local.xcconfig

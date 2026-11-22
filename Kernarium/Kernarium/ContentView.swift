@@ -266,6 +266,7 @@ struct ContentView: View {
     /// Only a runtime built for automation answers yes, and only a guest in
     /// the keep-running mode takes a job.
     private func startJobIfAutomationAsked() {
+        #if !APP_STORE
         guard BackgroundJob.startsWithGuest(
             asked: kernarium_runtime_loader_automation_job_at_start() != 0,
             mode: keepRunningChosen ? .keepRunning : .off,
@@ -273,6 +274,7 @@ struct ContentView: View {
         ) else { return }
         print("Kernarium: automation starts the background job")
         startKeepRunningJob()
+        #endif
     }
 
     private var keepRunningLabel: String {
@@ -332,6 +334,10 @@ struct ContentView: View {
             action: toggleKeyboard
         )
         .disabled(guestViewMode == .framebuffer && keyboardSource?.wrappedValue == "ubuntu")
+        #if APP_STORE
+        .disabled(guestViewMode == .serialConsole)
+        .accessibilityHint(guestViewMode == .serialConsole ? "The serial console is read-only." : "")
+        #endif
     }
 
     private var specialKeysRow: some View {

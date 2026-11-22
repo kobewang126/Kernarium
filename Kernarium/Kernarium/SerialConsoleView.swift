@@ -126,6 +126,7 @@ final class SerialConsoleController: ObservableObject {
     }
 
     nonisolated static func sendToGuest(_ data: Data) {
+        #if !APP_STORE
         let result = data.withUnsafeBytes { buffer -> Int32 in
             guard let baseAddress = buffer.baseAddress else { return 0 }
             return kernarium_runtime_loader_send_console_input(
@@ -136,6 +137,7 @@ final class SerialConsoleController: ObservableObject {
         if result != 0 {
             print("Kernarium: serial console input failed: \(result)")
         }
+        #endif
     }
 }
 

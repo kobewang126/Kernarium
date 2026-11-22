@@ -176,6 +176,15 @@
       }
     },
     {
+      "name": "kernarium-ios-device-app-store",
+      "displayName": "Kernarium iOS device Linux App Store runtime (4 KiB)",
+      "inherits": "kernarium-ios-device",
+      "binaryDir": "${sourceDir}/.build/kernarium-runtime-ios-device-app-store",
+      "cacheVariables": {
+        "UML_APP_STORE_RUNTIME": true
+      }
+    },
+    {
       "name": "kernarium-ios-device-automation",
       "displayName": "Kernarium iOS device automation runtime",
       "inherits": "kernarium-ios-device",
@@ -327,6 +336,11 @@
     {
       "name": "kernarium-ios-device",
       "configurePreset": "kernarium-ios-device",
+      "targets": ["KernariumRuntime", "architecture-audit"]
+    },
+    {
+      "name": "kernarium-ios-device-app-store",
+      "configurePreset": "kernarium-ios-device-app-store",
       "targets": ["KernariumRuntime", "architecture-audit"]
     },
     {

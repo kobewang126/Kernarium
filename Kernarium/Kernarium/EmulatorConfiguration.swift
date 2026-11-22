@@ -3,7 +3,9 @@
 import Foundation
 
 enum AndroidBootMode: UInt32, CaseIterable, Identifiable {
+    #if !APP_STORE
     static let environmentKey = "KERNARIUM_ANDROID_BOOT_MODE"
+    #endif
 
     case automatic = 0
     case normal = 1
@@ -33,6 +35,7 @@ enum AndroidBootMode: UInt32, CaseIterable, Identifiable {
 }
 
 struct EmulatorConfiguration: Equatable {
+    #if !APP_STORE
     static let vCPUEnvironmentKey = "KERNARIUM_VCPU_COUNT"
     static let guestMemoryEnvironmentKey = "KERNARIUM_GUEST_MEMORY_MIB"
     static let overlaySizeEnvironmentKey = "KERNARIUM_OVERLAY_SIZE_GIB"
@@ -50,6 +53,7 @@ struct EmulatorConfiguration: Equatable {
         "KERNARIUM_GPU_BUDGET_ENGINE_MIB"
     static let gpuBudgetHeadroomEnvironmentKey =
         "KERNARIUM_GPU_BUDGET_HEADROOM_MIB"
+    #endif
     // They default to the conservative launch set of
     // runtime/guest_memory_budget.hpp, which the loader answers without a
     // runtime: the set the default guest RAM is measured with, so the budget a
@@ -229,6 +233,15 @@ struct EmulatorConfiguration: Equatable {
                 Key.androidBootMode, Int(defaultAndroidBootMode.rawValue)
             ))
         ) ?? defaultAndroidBootMode
+        #if APP_STORE
+        let environmentVCPUCount: Int? = nil
+        let environmentGuestMemoryMiB: Int? = nil
+        let environmentOverlaySizeGiB: Int? = nil
+        let environmentAndroidDiskSizeGiB: Int? = nil
+        let environmentRetinaMode: Bool? = nil
+        let environmentAutoResizeGuest: Bool? = nil
+        let environmentAndroidBootMode: AndroidBootMode? = nil
+        #else
         let environmentVCPUCount = environmentInteger(
             environment[vCPUEnvironmentKey], in: 1...maximumVCPUCount
         )
@@ -261,6 +274,8 @@ struct EmulatorConfiguration: Equatable {
             AndroidBootMode.environmentKey
         ].flatMap { AndroidBootMode(environmentValue: $0) }
 
+        #endif
+
         let rootfsFilename = RootfsImage.validatedFilename(
             storedRootfsFilename
         ) ?? RootfsImage.defaultFilename
@@ -271,6 +286,11 @@ struct EmulatorConfiguration: Equatable {
         let storedGuestMemoryMiB = stored(
             Key.guestMemoryMiB, defaultGuestMemory(vCPUCount)
         )
+        #if APP_STORE
+        let gpuBudgetApplicationMiB = defaultGPUBudgetApplicationMiB
+        let gpuBudgetEngineMiB = defaultGPUBudgetEngineMiB
+        let gpuBudgetHeadroomMiB = defaultGPUBudgetHeadroomMiB
+        #else
         let gpuBudgetApplicationMiB = environmentInteger(
             environment[gpuBudgetApplicationEnvironmentKey],
             in: gpuBudgetParameterRangeMiB
@@ -283,6 +303,7 @@ struct EmulatorConfiguration: Equatable {
             environment[gpuBudgetHeadroomEnvironmentKey],
             in: gpuBudgetParameterRangeMiB
         ) ?? defaultGPUBudgetHeadroomMiB
+        #endif
         let maximumGuestMemoryMiB = steppedGuestMemoryMiB(
             guestMemoryBound(vCPUCount),
             rounding: .down
@@ -402,7 +423,9 @@ enum RootfsImage {
     /// which carries its own session setup. It applies only while the
     /// settings store no name: a stored name, `rootfs.erofs` included, is kept.
     static let defaultFilename = "kde-20260929-r2.erofs"
+    #if !APP_STORE
     static let environmentKey = "KERNARIUM_ROOTFS"
+    #endif
 
     nonisolated static var documentsDirectory: URL {
         FileManager.default.urls(
@@ -459,7 +482,11 @@ enum RootfsImage {
         configuredFilename: String,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> String? {
+        #if APP_STORE
+        validatedFilename(configuredFilename)
+        #else
         validatedFilename(environment[environmentKey] ?? configuredFilename)
+        #endif
     }
 
     static func availableFilenames(

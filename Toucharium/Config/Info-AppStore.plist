@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Toucharium</string>
+	<key>GuestPrivacyPolicyURL</key>
+	<string>$(TOUCHARIUM_WEBSITE_BASE_URL)/privacy.html</string>
+	<key>GuestSourceURL</key>
+	<string>$(TOUCHARIUM_SOURCE_URL)</string>
+	<key>GuestSupportURL</key>
+	<string>$(TOUCHARIUM_WEBSITE_BASE_URL)/support.html</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Toucharium uses the microphone when you enable it for Ubuntu Touch.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+</dict>
+</plist>

@@ -234,6 +234,7 @@ struct EmulatorSettingsView: View {
                     )
                 }
 
+                #if !APP_STORE
                 Section("Background") {
                     Picker(
                         "When Kernarium is in the background",
@@ -272,6 +273,16 @@ struct EmulatorSettingsView: View {
                     )
                 }
 
+                #endif
+
+                if !publicationLinks.isEmpty {
+                    Section("About") {
+                        ForEach(publicationLinks, id: \.title) { item in
+                            Link(item.title, destination: item.url)
+                        }
+                    }
+                }
+
                 Section {
                     Text("Changes take effect the next time the app launches.")
                 }
@@ -291,6 +302,19 @@ struct EmulatorSettingsView: View {
                     .accessibilityIdentifier("settingsSaveButton")
                 }
             }
+        }
+    }
+
+    private var publicationLinks: [(title: String, url: URL)] {
+        [
+            ("Privacy policy", "GuestPrivacyPolicyURL"),
+            ("Support", "GuestSupportURL"),
+            ("Open-source code", "GuestSourceURL"),
+        ].compactMap { title, key in
+            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+                  let url = URL(string: value), url.scheme == "https",
+                  let host = url.host, !host.isEmpty else { return nil }
+            return (title, url)
         }
     }
 

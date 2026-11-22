@@ -1,0 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copy to Publication.local.xcconfig and set the published support site and
+// corresponding source page. The empty expansion keeps // out of xcconfig.
+TOUCHARIUM_WEBSITE_BASE_URL = https:/$()/example.org/toucharium
+TOUCHARIUM_SOURCE_URL = https:/$()/example.org/source

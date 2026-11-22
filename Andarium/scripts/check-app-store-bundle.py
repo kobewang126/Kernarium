@@ -485,12 +485,20 @@ def host_code(path: Path) -> tuple[bytes, int] | None:
     return bytes(buffer), base
 
 
-def knobs(path: Path) -> list[str]:
+# The Linux host writes these fields into the guest's /boot.env. They are not
+# read from the Apple process environment (KernariumRuntime.mm).
+LINUX_BOOT_PARAMETERS = frozenset({
+    "UML_BOOT_ROOT", "UML_BOOT_ROOT_TYPE", "UML_BOOT_UPPER",
+    "UML_BOOT_UPPER_DEVICE", "UML_BOOT_UPPER_PERSISTENT", "UML_BOOT_ENTRY",
+})
+
+
+def knobs(path: Path, allowed: frozenset[str] = frozenset()) -> list[str]:
     """The automation knob names in the host code of one Mach-O file."""
     code = host_code(path)
     if code is None:
         return []
-    return sorted({match.decode() for match in KNOB.findall(code[0])})
+    return sorted({match.decode() for match in KNOB.findall(code[0])} - allowed)
 
 
 def harness_lines(path: Path) -> list[str]:
@@ -646,7 +654,7 @@ DEBUG_SYMBOLS = (
     ("census and histogram", (b"6census", b"execution_histogram_note",
                               b"execution_histogram_forget")),
     ("automation", (b"kernarium_runtime_automation_",
-                    b"kernarium_runtime_loader_automation_", b"7harness",
+                    b"kernarium_runtime_loader_automation_", b"9kernarium7harness",
                     b"14AutomationBoot")),
     ("test tooling", (b"5vsock9Forwarder", b"17UnixSocketChannel", b"_rfbGetScreen",
                       b"_rfbInitServer")),
@@ -2191,10 +2199,15 @@ def main() -> int:
         "--runtime", action="store_true",
         help="the path is one runtime framework: check its automation knobs, "
              "its debugging support and the traces of its build host")
+    parser.add_argument(
+        "--linux-guest", action="store_true",
+        help="with --runtime, allow the Linux guest's fixed /boot.env field names")
     mode.add_argument(
         "--host-traces", action="store_true",
         help="the path is one framework: check the traces of its build host alone")
     options = parser.parse_args()
+    if options.linux_guest and not options.runtime:
+        parser.error("--linux-guest requires --runtime")
     global _SENSITIVE
     _SENSITIVE = sensitive_pattern(options)
     with one_walk(options.app, planned_scans(options)):
@@ -2266,7 +2279,8 @@ def check(options: argparse.Namespace) -> int:
         found = []
         for binary in executables_of(app):
             if options.runtime:
-                found.extend(f"{binary.name}: carries automation knob {name}" for name in knobs(binary))
+                found.extend(f"{binary.name}: carries automation knob {name}" for name in knobs(
+                    binary, LINUX_BOOT_PARAMETERS if options.linux_guest else frozenset()))
                 found.extend(f"{binary.name}: carries debugging support: {item}"
                              for item in debug_support(binary))
             found.extend(f"{binary.name}: {trace}" for trace in build_host_traces(binary))

@@ -58,17 +58,18 @@
 		8AF5E8CF302C966200B19616 /* Toucharium.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Toucharium.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8AF5E8DE302C966400B19616 /* KernariumTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KernariumTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8AF5E8E8302C966400B19616 /* KernariumUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KernariumUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000012 /* MesaEGL.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MesaEGL.xcframework; path = "../.build/kernarium-xcframeworks/MesaEGL.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000013 /* MesaGallium.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MesaGallium.xcframework; path = "../.build/kernarium-xcframeworks/MesaGallium.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000014 /* KRuntime_6_18_4K.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KRuntime_6_18_4K.xcframework; path = "../.build/kernarium-xcframeworks/KRuntime_6_18_4K.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000015 /* KRuntime_Android_6_18_4K.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KRuntime_Android_6_18_4K.xcframework; path = "../.build/kernarium-xcframeworks/KRuntime_Android_6_18_4K.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000016 /* GPTFDisk.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GPTFDisk.xcframework; path = "../.build/kernarium-xcframeworks/GPTFDisk.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000017 /* LibZstd.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = LibZstd.xcframework; path = "../.build/kernarium-xcframeworks/LibZstd.xcframework"; sourceTree = SOURCE_ROOT; };
-		A10000000000000000000019 /* KosmicKrisp.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KosmicKrisp.xcframework; path = "../.build/kernarium-xcframeworks/KosmicKrisp.xcframework"; sourceTree = SOURCE_ROOT; };
-		A1000000000000000000001A /* HostBattery.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HostBattery.xcframework; path = "../.build/kernarium-xcframeworks/HostBattery.xcframework"; sourceTree = SOURCE_ROOT; };
-		A1000000000000000000001B /* HostVideoEncoder.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HostVideoEncoder.xcframework; path = "../.build/kernarium-xcframeworks/HostVideoEncoder.xcframework"; sourceTree = SOURCE_ROOT; };
+		A10000000000000000000012 /* MesaEGL.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MesaEGL.xcframework; path = MesaEGL.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000013 /* MesaGallium.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MesaGallium.xcframework; path = MesaGallium.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000014 /* KRuntime_6_18_4K.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KRuntime_6_18_4K.xcframework; path = KRuntime_6_18_4K.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000015 /* KRuntime_Android_6_18_4K.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KRuntime_Android_6_18_4K.xcframework; path = KRuntime_Android_6_18_4K.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000016 /* GPTFDisk.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = GPTFDisk.xcframework; path = GPTFDisk.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000017 /* LibZstd.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = LibZstd.xcframework; path = LibZstd.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A10000000000000000000019 /* KosmicKrisp.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = KosmicKrisp.xcframework; path = KosmicKrisp.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A1000000000000000000001A /* HostBattery.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HostBattery.xcframework; path = HostBattery.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
+		A1000000000000000000001B /* HostVideoEncoder.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = HostVideoEncoder.xcframework; path = HostVideoEncoder.xcframework; sourceTree = TOUCHARIUM_FRAMEWORK_DIRECTORY; };
 		C30000000000000000000001 /* KernariumAutomation.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KernariumAutomation.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D40000000000000000000010 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		79EA3660E30B454898DB5A6B /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/AppStore.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -228,6 +229,7 @@
 				8AF5E8CD302C966200B19616 /* Resources */,
 				A10000000000000000000020 /* Embed Frameworks */,
 				A10000000000000000000040 /* Embed KosmicKrisp (device only) */,
+				6795AFC3433D43C4AED0F7B3 /* Check Toucharium store bundle */,
 			);
 			buildRules = (
 			);
@@ -423,7 +425,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"$SRCROOT/../Kernarium/scripts/embed-device-framework.sh\" \"$SRCROOT/../.build/kernarium-xcframeworks/KosmicKrisp.xcframework\"\n";
+			shellScript = "\"$SRCROOT/../Kernarium/scripts/embed-device-framework.sh\" \"$TOUCHARIUM_FRAMEWORK_DIRECTORY/KosmicKrisp.xcframework\"\n";
 		};
 		A10000000000000000000041 /* Check Mac run location */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -456,6 +458,18 @@
             shellPath = /bin/sh;
             shellScript = "/bin/sh \"$SRCROOT/scripts/stage-guest-policy.sh\"\n";
         };
+		6795AFC3433D43C4AED0F7B3 /* Check Toucharium store bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ("$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)", "$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",);
+			name = "Check Toucharium store bundle";
+			outputPaths = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nif [ \"$CONFIGURATION\" = AppStore ]; then\n    set --\n    if [ \"$ACTION\" = install ]; then set -- --archive; fi\n    python3 -B \"$SRCROOT/scripts/check-store-bundle.py\" \"$@\" \"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -558,6 +572,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -620,6 +635,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -643,7 +659,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../.build/kernarium-xcframeworks",
+					"$(TOUCHARIUM_FRAMEWORK_DIRECTORY)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -661,6 +677,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
@@ -693,7 +710,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../.build/kernarium-xcframeworks",
+					"$(TOUCHARIUM_FRAMEWORK_DIRECTORY)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -711,6 +728,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
@@ -739,6 +757,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -774,6 +793,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -808,6 +828,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -831,6 +852,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -854,6 +876,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.automation;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -877,6 +900,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.automation;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -893,6 +917,119 @@
 			};
 			name = Release;
 		};
+		B334A8BBC36542DF9E141C38 /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D40000000000000000000010 /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = AppStore;
+		};
+		E06356AAC7644F549DC658ED /* AppStore */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 79EA3660E30B454898DB5A6B /* AppStore.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = TouchariumIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ../Kernarium/Kernarium/Kernarium.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(TOUCHARIUM_FRAMEWORK_DIRECTORY)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info-AppStore.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = NO;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/toucharium-app-store-xcframeworks";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
+                TOUCHARIUM_APP_BUNDLE_IDENTIFIER = org.toucharium.app;
+				PRODUCT_MODULE_NAME = Kernarium;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = iphoneos;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "../Kernarium/Kernarium/Kernarium-Bridging-Header.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = AppStore;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -901,6 +1038,7 @@
 			buildConfigurations = (
 				8AF5E8F0302C966400B19616 /* Debug */,
 				8AF5E8F1302C966400B19616 /* Release */,
+				B334A8BBC36542DF9E141C38 /* AppStore */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -910,6 +1048,7 @@
 			buildConfigurations = (
 				8AF5E8F3302C966400B19616 /* Debug */,
 				8AF5E8F4302C966400B19616 /* Release */,
+				E06356AAC7644F549DC658ED /* AppStore */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

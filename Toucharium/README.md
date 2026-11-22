@@ -101,3 +101,30 @@ It checks the image digest before publishing it in Documents, then ends the
 import run. Relaunch without that variable to boot. This avoids granting the
 application access to the source checkout or writing into its protected
 container from another process.
+
+## Store builds
+
+The scheme archives the `AppStore` configuration. It uses the store loader and
+runtime without JIT, console input, display mirroring or automation overrides;
+Picture in Picture is unavailable and the serial console is read-only in that
+configuration. Ordinary Debug and
+Release builds retain their development features.
+
+Build both `kernarium-ios-device-app-store` and
+`kernarium-ios-device-android-app-store`, then package with
+`KERNARIUM_XCFRAMEWORK_OUTPUT=.build/toucharium-app-store-xcframeworks Kernarium/scripts/package-ios-frameworks.sh --app-store`.
+The store frameworks have their own directory so development builds retain
+their runtime slices.
+
+Copy `Config/Publication.local.xcconfig.example` to its ignored local name and
+supply the published website and corresponding-source URLs. The store settings
+screen links to privacy, support and source pages supplied by its Info.plist.
+`scripts/check-store-bundle.py` validates the built host binaries, publication
+links and privacy manifests. During archiving it also requires a clean committed
+source tree and verifies both embedded kernels against their accepted descriptors.
+The store configuration runs the guest only in the foreground and has no audio
+background mode.
+
+The App Store configuration alone does not establish release readiness: an
+archive must use accepted artifacts matching the archived inputs, and the
+bundled guest software requires its applicable notices and corresponding source.

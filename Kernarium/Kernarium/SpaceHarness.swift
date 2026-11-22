@@ -3,6 +3,15 @@
 import Foundation
 import GuestHostCore
 
+#if APP_STORE
+nonisolated struct SpaceHarness: Sendable {
+    static let current = SpaceHarness()
+    let enabled = false
+    func freeSpace() -> UInt64 { HostStorage.freeBytes() }
+    func answer() -> SpaceAnswer? { nil }
+    func consumeAnswer() {}
+}
+#else
 /// A harness launch's way to drive the low-space pause without filling the
 /// disk and without a finger: with `KERNARIUM_SPACE_HARNESS=1`, a file
 /// `free-space-mib` in Documents, holding a number, stands for the device's
@@ -60,3 +69,5 @@ nonisolated struct SpaceHarness: Sendable {
         )
     }
 }
+
+#endif

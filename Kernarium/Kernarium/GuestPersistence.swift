@@ -389,7 +389,11 @@ final class SystemBackgroundEffects: BackgroundEffects {
             kernarium_runtime_loader_guest_display_active()
         },
         holdDelayMilliseconds: @escaping @Sendable () -> Int32 = {
+            #if APP_STORE
+            0
+            #else
             kernarium_runtime_loader_automation_hold_delay_ms()
+            #endif
         },
         gpuHold: GuestGPUHold = GuestGPUHold(gate: RuntimeGPUGate())
     ) {

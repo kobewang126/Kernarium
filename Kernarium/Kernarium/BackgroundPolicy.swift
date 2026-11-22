@@ -50,14 +50,20 @@ struct BackgroundSettings {
     static let keyPrefix = "background.mode."
     /// Automation's way to run one launch in a mode without changing what the
     /// user chose, as the other `KERNARIUM_` knobs do.
+    #if !APP_STORE
     static let environmentKey = "KERNARIUM_BACKGROUND_MODE"
+    #endif
     /// "0" keeps the vCPUs at full priority while the guest is kept running,
     /// so a measurement can compare the two.
+    #if !APP_STORE
     static let throttleEnvironmentKey = "KERNARIUM_BACKGROUND_THROTTLE"
+    #endif
     static let limitKeyPrefix = "background.limitMinutes."
     /// Automation's way to run one launch with another time limit, in whole
     /// minutes, so a test does not wait out a user's choice.
+    #if !APP_STORE
     static let limitEnvironmentKey = "KERNARIUM_BACKGROUND_LIMIT_MINUTES"
+    #endif
     /// The times offered for a kept-running job, and the one a guest has until
     /// it chooses.
     static let limitChoicesMinutes = [15, 30, 60, 120]
@@ -76,26 +82,36 @@ struct BackgroundSettings {
     }
 
     func mode(forGuest guest: String) -> BackgroundMode {
+        #if APP_STORE
+        return .off
+        #else
         if let forced = environment[Self.environmentKey]
             .flatMap(BackgroundMode.init(rawValue:)) {
             return forced
         }
         return defaults.string(forKey: Self.keyPrefix + guest)
             .flatMap(BackgroundMode.init(rawValue:)) ?? .off
+        #endif
     }
 
     /// Whether a guest kept running in the background runs at the system's
     /// background priority. It does unless automation says otherwise.
     var throttlesKeptGuest: Bool {
+        #if APP_STORE
+        true
+        #else
         environment[Self.throttleEnvironmentKey] != "0"
+        #endif
     }
 
     /// How long a kept-running job lasts for this guest, in minutes.
     func limitMinutes(forGuest guest: String) -> Int {
+        #if !APP_STORE
         if let forced = environment[Self.limitEnvironmentKey].flatMap(Int.init),
            Self.limitRangeMinutes.contains(forced) {
             return forced
         }
+        #endif
         let stored = defaults.integer(forKey: Self.limitKeyPrefix + guest)
         return Self.limitRangeMinutes.contains(stored) ?
             stored : Self.defaultLimitMinutes

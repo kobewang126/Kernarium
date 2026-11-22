@@ -7,6 +7,25 @@ import CoreVideo
 import SwiftUI
 import UIKit
 
+#if APP_STORE
+// The store runtime does not export a display mirror.
+@MainActor
+final class GuestPictureInPicture: PictureInPictureWindow {
+    static let shared = GuestPictureInPicture()
+    static let isSupported = false
+    weak var controller: BackgroundController?
+    var wanted: () -> Bool = { false }
+    var canStart: Bool { false }
+    var isActive: Bool { false }
+    func stop() {}
+    func guestRunningChanged(_ running: Bool) {}
+    func refresh() {}
+}
+
+struct GuestPictureInPictureAnchor: View {
+    var body: some View { EmptyView() }
+}
+#else
 /// Hands the newest frame from the runtime's thread to the main thread and
 /// drops the ones it replaced, so a busy main thread never queues frames or
 /// holds the runtime's buffer pool.
@@ -424,3 +443,5 @@ final class GuestPictureInPictureAnchorView: UIView {
         hosted.frame = bounds
     }
 }
+
+#endif

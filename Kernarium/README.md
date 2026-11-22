@@ -178,9 +178,10 @@ none of the settings below.
   `KERNARIUM_BACKGROUND_HOLD_DELAY_MS`, which start a background job with the
   guest and move the GPU hold for a measurement; the packaging script refuses a
   release runtime that contains their names.
-- **App Store runtime**: the `kernarium-ios-device-android-app-store` preset
-  (`UML_APP_STORE_RUNTIME`), packaged with `--app-store --runtimes android` for
-  Andarium's App Store configuration; it conflicts with the automation harness.
+- **App Store runtimes**: the `kernarium-ios-device-app-store` (Linux) and
+  `kernarium-ios-device-android-app-store` presets (`UML_APP_STORE_RUNTIME`),
+  packaged with `--app-store`. `--runtimes android` selects Android alone for
+  Andarium; the full set serves Toucharium. They conflict with the automation harness.
   Every environment variable that tunes, observes or drives a run is read as
   unset (the `KERNARIUM_` knobs and the `UML_` and `DARWIN_UML_` diagnostics;
   `TMPDIR` stays). It also carries none of the debugging support, so a shipped

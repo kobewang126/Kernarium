@@ -28,12 +28,12 @@
 # conflicts with it). The output directory is shared: Kernarium needs the
 # default full set, so package that again before building Kernarium.
 #
-# --app-store packages the App Store Android runtime, built from the
-# kernarium-ios-device-android-app-store preset, for the device alone and for
-# Andarium's App Store configuration: it reads no environment variable that
+# --app-store selects the App Store runtimes, built from the
+# kernarium-ios-device-app-store and kernarium-ios-device-android-app-store
+# presets, for the device alone: they read no environment variable that
 # tunes, observes or drives a run, and the packaging fails if the runtime
 # carries the name of one. It conflicts with both automation options, with the
-# Simulator and with --runtimes all.
+# Simulator. --runtimes android selects only the Android runtime.
 #
 # No packaged framework keeps the linker's debug map: it names the object files
 # of the build host (N_OSO stabs, absolute paths of the checkout and the
@@ -106,8 +106,6 @@ android)
 *) fail "--runtimes takes all or android: $RUNTIMES" ;;
 esac
 if [ "$APP_STORE" -eq 1 ]; then
-	[ "$RUNTIMES" = android ] ||
-		fail "--app-store packages the Android runtime alone; add --runtimes android"
 	[ "$AUTOMATION" -eq 0 ] && [ "$ANDROID_AUTOMATION" -eq 0 ] ||
 		fail "--app-store conflicts with the automation options"
 	case " $SDKS " in
@@ -154,6 +152,7 @@ RUNTIME_ANDROID_4K="KRuntime_Android_6_18_4K"
 
 RUNTIME_TREE=kernarium-runtime-ios-device
 [ "$AUTOMATION" -eq 0 ] || RUNTIME_TREE=kernarium-runtime-ios-device-automation
+[ "$APP_STORE" -eq 0 ] || RUNTIME_TREE=kernarium-runtime-ios-device-app-store
 ANDROID_TREE=kernarium-runtime-ios-device-android-4k
 [ "$ANDROID_AUTOMATION" -eq 0 ] ||
 	ANDROID_TREE=kernarium-runtime-ios-device-android-4k-automation
@@ -545,9 +544,13 @@ done
 # An App Store runtime carries the name of no environment knob, and no framework
 # of it keeps a trace of the host that built it.
 if [ "$APP_STORE" -eq 1 ]; then
-	"$PYTHON" -B "$ROOT_DIR/Andarium/scripts/check-app-store-bundle.py" --runtime \
-		"$STAGE/$RUNTIME_ANDROID_4K.xcframework/ios-arm64/$RUNTIME_ANDROID_4K.framework" ||
-		fail "$RUNTIME_ANDROID_4K carries an environment knob or a trace of its build host; build the kernarium-ios-device-android-app-store preset"
+	for framework in $RUNTIME_FRAMEWORKS; do
+		set --
+		[ "$framework" != "$RUNTIME_4K" ] || set -- --linux-guest
+		"$PYTHON" -B "$ROOT_DIR/Andarium/scripts/check-app-store-bundle.py" --runtime "$@" \
+			"$STAGE/$framework.xcframework/ios-arm64/$framework.framework" ||
+			fail "$framework fails the App Store runtime check; rebuild its app-store preset"
+	done
 	for framework in $GPU_FRAMEWORKS; do
 		"$PYTHON" -B "$ROOT_DIR/Andarium/scripts/check-app-store-bundle.py" --host-traces \
 			"$STAGE/$framework.xcframework/ios-arm64/$framework.framework" ||
