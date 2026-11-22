@@ -20,6 +20,10 @@ to Lomiri; iPhone mode suppresses the guest keyboard.
 The experimental Ubuntu keyboard can submit a black surface on the Simulator;
 iPhone keyboard mode is the default.
 
+The application uses the original Toucharium mark in
+`Branding/Toucharium.svg`. From the repository root,
+`swift Toucharium/scripts/render-icon.swift` renders its opaque App Store icon.
+
 ## Source and licensing
 
 Toucharium extends Kernarium and uses the official UBports userspace. Host code
