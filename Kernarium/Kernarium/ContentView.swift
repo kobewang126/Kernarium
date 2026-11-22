@@ -7,6 +7,15 @@ import MetalKit
 import SwiftUI
 
 struct ContentView: View {
+    /// Touchscreen guests can reserve their entire display for edge gestures.
+    let controlsBelowGuest: Bool
+    var keyboardSource: Binding<String>?
+
+    init(controlsBelowGuest: Bool = false, keyboardSource: Binding<String>? = nil) {
+        self.controlsBelowGuest = controlsBelowGuest
+        self.keyboardSource = keyboardSource
+    }
+
     @StateObject private var serialConsole = SerialConsoleController()
     @ObservedObject private var launcher = EmulatorLauncher.shared
     @ObservedObject private var backgroundSession = BackgroundSession.shared
@@ -35,7 +44,10 @@ struct ContentView: View {
 
                 GuestDisplayView(
                     keyboardVisible: $framebufferKeyboardVisible,
-                    scale: EmulatorLauncher.shared.displayScale
+                    scale: EmulatorLauncher.shared.displayScale,
+                    touchDidBegin: {
+                        if controlsBelowGuest { framebufferKeyboardVisible = false }
+                    }
                 ) { view, geometry in
                     EmulatorLauncher.shared.start(view: view, geometry: geometry)
                 }
@@ -97,7 +109,10 @@ struct ContentView: View {
                 SceneCoverage.cornerOffsetEdges(coversScreen: sceneCoversScreen),
                 sizeToFit: true
             )
-            floatingButtons
+            if !controlsBelowGuest { floatingButtons }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if controlsBelowGuest { bottomControls }
         }
         .ignoresSafeArea(.keyboard)
         .overlay {
@@ -118,7 +133,10 @@ struct ContentView: View {
             SceneCoverageReader { sceneCoversScreen = $0 }
         }
         .sheet(isPresented: $settingsPresented) {
-            EmulatorSettingsView()
+            EmulatorSettingsView(keyboardSource: keyboardSource)
+        }
+        .onChange(of: keyboardSource?.wrappedValue) {
+            framebufferKeyboardVisible = false
         }
         .onAppear {
             serialConsole.startObserving()
@@ -183,6 +201,25 @@ struct ContentView: View {
         GlassEffectContainer(spacing: FloatingControlMetrics.spacing) {
             floatingButtonsContent
         }
+    }
+
+    private var bottomControls: some View {
+        GlassEffectContainer(spacing: FloatingControlMetrics.spacing) {
+            HStack(spacing: FloatingControlMetrics.spacing) {
+                settingsButton
+                if keepRunningChosen && launcher.phase == .running {
+                    keepRunningButton
+                }
+                displayModeButton
+                keyboardButton
+                ForEach([GuestSpecialKey.power, .volumeUp, .volumeDown]) { key in
+                    specialKeyButton(key)
+                }
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
     }
 
     private var floatingButtonsContent: some View {
@@ -294,6 +331,7 @@ struct ContentView: View {
             identifier: "keyboardButton",
             action: toggleKeyboard
         )
+        .disabled(guestViewMode == .framebuffer && keyboardSource?.wrappedValue == "ubuntu")
     }
 
     private var specialKeysRow: some View {
@@ -304,18 +342,22 @@ struct ContentView: View {
                 }
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
-            floatingIconButton(
-                systemName: specialKeysExpanded
-                    ? "chevron.right"
-                    : "chevron.left",
-                accessibilityLabel: specialKeysExpanded
-                    ? "Hide special keys"
-                    : "Show special keys",
-                identifier: "specialKeysButton"
-            ) {
-                withAnimation {
-                    specialKeysExpanded.toggle()
-                }
+            specialKeysToggle
+        }
+    }
+
+    private var specialKeysToggle: some View {
+        floatingIconButton(
+            systemName: specialKeysExpanded
+                ? "chevron.right"
+                : "chevron.left",
+            accessibilityLabel: specialKeysExpanded
+                ? "Hide special keys"
+                : "Show special keys",
+            identifier: "specialKeysButton"
+        ) {
+            withAnimation {
+                specialKeysExpanded.toggle()
             }
         }
     }
@@ -350,8 +392,8 @@ struct ContentView: View {
     private func floatingIcon(systemName: String) -> some View {
         Image(systemName: systemName)
             .frame(
-                width: FloatingControlMetrics.buttonSide,
-                height: FloatingControlMetrics.buttonSide
+                width: controlsBelowGuest ? 44 : FloatingControlMetrics.buttonSide,
+                height: controlsBelowGuest ? 44 : FloatingControlMetrics.buttonSide
             )
             .contentShape(Circle())
     }
@@ -719,6 +761,41 @@ enum OverlayDisk {
         }
         return disk
     }
+
+    /// Publish a newly allocated disk without replacing any existing state.
+    /// A failed initialization is left for explicit recovery, never reformatted
+    /// just because the application has been relaunched.
+    static func persistent(sizeGiB: Int, in directory: URL) throws -> URL {
+        let manager = FileManager.default
+        let disk = directory.appendingPathComponent(filename)
+        try manager.createDirectory(at: directory, withIntermediateDirectories: true)
+        if manager.fileExists(atPath: disk.path) {
+            let values = try disk.resourceValues(forKeys: [
+                .isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey,
+            ])
+            guard values.isRegularFile == true, values.isSymbolicLink != true,
+                  (values.fileSize ?? 0) >= 4096 else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return disk
+        }
+        let temporary = directory.appendingPathComponent(UUID().uuidString + ".partial")
+        defer { try? manager.removeItem(at: temporary) }
+        try Data("UML_BOOT_EMPTY_OVERLAY_V1\n".utf8).write(
+            to: temporary, options: .withoutOverwriting
+        )
+        let handle = try FileHandle(forWritingTo: temporary)
+        do {
+            try handle.truncate(atOffset: byteCount(forSizeGiB: sizeGiB))
+            try handle.synchronize()
+            try handle.close()
+        } catch {
+            try? handle.close()
+            throw error
+        }
+        try manager.linkItem(at: temporary, to: disk)
+        return disk
+    }
 }
 
 enum ThermalSamplePhase: String {
@@ -767,11 +844,16 @@ private struct PreparedBoot: Sendable {
     /// The data disk's capacity: the runtime creates a missing disk this size
     /// and grows a smaller one to it. 0 leaves an existing disk alone.
     let androidDataGiB: UInt32
+    let persistentLinuxOverlay: Bool
+    let linuxAppArmor: Bool
 
-    init(rootfs: URL, overlay: URL) {
-        paths = [rootfs.path, overlay.path, nil, nil]
+    init(rootfs: URL, overlay: URL, persistentLinuxOverlay: Bool = false,
+         linuxAppArmor: Bool = false, linuxBootPolicy: URL? = nil) {
+        paths = [rootfs.path, overlay.path, nil, nil, linuxBootPolicy?.path]
         androidBootMode = .automatic
         androidDataGiB = 0
+        self.persistentLinuxOverlay = persistentLinuxOverlay
+        self.linuxAppArmor = linuxAppArmor
     }
 
     init(
@@ -787,6 +869,8 @@ private struct PreparedBoot: Sendable {
         ]
         self.androidBootMode = androidBootMode
         self.androidDataGiB = androidDataGiB
+        persistentLinuxOverlay = false
+        linuxAppArmor = false
     }
 
     func withCPaths<Result>(
@@ -850,6 +934,9 @@ private func runGuest(
         request.gpu_budget_headroom_mib = gpuBudget.headroomMiB
         request.rootfs_path = paths[0]
         request.overlay_path = paths[1]
+        request.linux_overlay_persistent = boot.persistentLinuxOverlay ? 1 : 0
+        request.linux_apparmor = boot.linuxAppArmor ? 1 : 0
+        request.linux_policy_archive_path = paths.count > 4 ? paths[4] : nil
         request.android_data_disk_path = paths[2]
         request.android_release_path = paths[3]
         request.android_data_gib = boot.androidDataGiB
@@ -880,6 +967,15 @@ final class EmulatorLauncher: ObservableObject, SpaceRun {
     )
 
     private let configuration: EmulatorConfiguration
+    /// An application's explicit opt-in to persistent Linux guest state.
+    /// Set before its first display layout starts the run.
+    var persistentOverlayDirectory: URL?
+    var linuxAppArmor = false
+    var linuxBootPolicy: URL?
+    /// An app can tailor its boot policy to the display's actual density.
+    var linuxBootPolicyForDisplay: ((UInt32) throws -> URL)?
+    /// An app-owned read-only image; imported images with the same name win.
+    var bundledLinuxImage: URL?
     /// The job that keeps the guest running in the background, which ends
     /// with the run.
     private let job: BackgroundJob
@@ -960,7 +1056,12 @@ final class EmulatorLauncher: ObservableObject, SpaceRun {
             print("Kernarium: invalid rootfs filename")
             return
         }
-        guard let selection = RootfsImage.selection(named: rootfsFilename) else {
+        let bundledSelection = bundledLinuxImage.flatMap { image -> GuestSelection? in
+            guard image.lastPathComponent == rootfsFilename else { return nil }
+            return .image(image, flavor: .linux)
+        }
+        guard let selection = RootfsImage.selection(named: rootfsFilename)
+            ?? bundledSelection else {
             print("Kernarium: Documents/\(rootfsFilename) is missing")
             return
         }
@@ -1025,7 +1126,9 @@ final class EmulatorLauncher: ObservableObject, SpaceRun {
         let boot: PreparedBoot
         switch selection {
         case let .image(rootfs, _):
-            guard let prepared = prepareImageBoot(rootfs: rootfs) else { return }
+            guard let prepared = prepareImageBoot(
+                rootfs: rootfs, dotsPerInch: geometry.dotsPerInch
+            ) else { return }
             boot = prepared
         case let .bundle(bundle):
             guard let prepared = prepareBundleBoot(bundle: bundle) else { return }
@@ -1117,7 +1220,7 @@ final class EmulatorLauncher: ObservableObject, SpaceRun {
 
     /// A plain image boots read-only under a disposable overlay disk, which is
     /// recreated every launch and holds no state worth keeping.
-    private func prepareImageBoot(rootfs: URL) -> PreparedBoot? {
+    private func prepareImageBoot(rootfs: URL, dotsPerInch: UInt32) -> PreparedBoot? {
         if rootfs.pathExtension.lowercased() == "ext4" {
             do {
                 try FileManager.default.setAttributes(
@@ -1130,14 +1233,23 @@ final class EmulatorLauncher: ObservableObject, SpaceRun {
             }
         }
         do {
-            let overlay = try OverlayDisk.recreate(
-                sizeGiB: configuration.overlaySizeGiB
+            let overlay: URL
+            if let directory = persistentOverlayDirectory {
+                overlay = try OverlayDisk.persistent(
+                    sizeGiB: configuration.overlaySizeGiB, in: directory
+                )
+            } else {
+                overlay = try OverlayDisk.recreate(sizeGiB: configuration.overlaySizeGiB)
+            }
+            let policy = try linuxBootPolicyForDisplay?(dotsPerInch) ?? linuxBootPolicy
+            return PreparedBoot(
+                rootfs: rootfs, overlay: overlay,
+                persistentLinuxOverlay: persistentOverlayDirectory != nil,
+                linuxAppArmor: linuxAppArmor, linuxBootPolicy: policy
             )
-            return PreparedBoot(rootfs: rootfs, overlay: overlay)
         } catch {
             print(
-                "Kernarium: cannot create " +
-                "\(configuration.overlaySizeGiB) GiB overlay disk: \(error)"
+                "Kernarium: cannot prepare Linux boot: \(error)"
             )
             return nil
         }

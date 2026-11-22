@@ -657,6 +657,44 @@ struct KernariumTests {
 
     @Test
     @MainActor
+    func persistentOverlayKeepsStateAndCapacityAcrossLaunches() throws {
+        let manager = FileManager.default
+        let directory = try makeScratchDirectory("persistent-overlay")
+        defer { try? manager.removeItem(at: directory) }
+        let first = try OverlayDisk.persistent(sizeGiB: 3, in: directory)
+        let reader = try FileHandle(forReadingFrom: first)
+        #expect(try reader.read(upToCount: 26) == Data("UML_BOOT_EMPTY_OVERLAY_V1\n".utf8))
+        try reader.close()
+        let writer = try FileHandle(forWritingTo: first)
+        try writer.seek(toOffset: 8192)
+        try writer.write(contentsOf: Data("user settings".utf8))
+        try writer.close()
+        let second = try OverlayDisk.persistent(sizeGiB: 4, in: directory)
+        #expect(first == second)
+        let size = try manager.attributesOfItem(atPath: second.path)[.size] as? NSNumber
+        #expect(size?.uint64Value == 3 * 1024 * 1024 * 1024)
+        let reopened = try FileHandle(forReadingFrom: second)
+        try reopened.seek(toOffset: 8192)
+        #expect(try reopened.read(upToCount: 13) == Data("user settings".utf8))
+        try reopened.close()
+    }
+
+    @Test
+    @MainActor
+    func persistentOverlayRefusesInvalidExistingDisk() throws {
+        let manager = FileManager.default
+        let directory = try makeScratchDirectory("invalid-persistent-overlay")
+        defer { try? manager.removeItem(at: directory) }
+        let disk = directory.appendingPathComponent(OverlayDisk.filename)
+        try Data("valuable data".utf8).write(to: disk)
+        #expect(throws: (any Error).self) {
+            try OverlayDisk.persistent(sizeGiB: 3, in: directory)
+        }
+        #expect(try Data(contentsOf: disk) == Data("valuable data".utf8))
+    }
+
+    @Test
+    @MainActor
     func overlayDiskIsRecreatedAtRequestedSize() throws {
         let manager = FileManager.default
         let directory = try makeScratchDirectory("overlay-disk")

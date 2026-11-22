@@ -78,6 +78,7 @@
 #include <chrono>
 #include <climits>
 #include <condition_variable>
+#include <fstream>
 #include <cctype>
 #include <cerrno>
 #include <cstddef>
@@ -1337,7 +1338,7 @@ std::string fbconFontArgument(uint32_t dotsPerInch)
  * overlay whose writable layer is a fresh ext4 filesystem on the overlay
  * disk, ubd1, and then the image's own init. Kernarium/README.md and
  * tools/rootfs/boot-ramdisk/README.md own the contract. */
-std::string bootParameters(bool ext4Image)
+std::string bootParameters(bool ext4Image, bool persistentOverlay)
 {
     std::string parameters {"UML_BOOT_ROOT=/dev/ubda\nUML_BOOT_ROOT_TYPE="};
     parameters.append(ext4Image ? "ext4" : "erofs");
@@ -1345,7 +1346,28 @@ std::string bootParameters(bool ext4Image)
         "\nUML_BOOT_UPPER=ext4\n"
         "UML_BOOT_UPPER_DEVICE=/dev/ubdb\n"
         "UML_BOOT_ENTRY=/sbin/init\n");
+    if (persistentOverlay)
+        parameters.append("UML_BOOT_UPPER_PERSISTENT=1\n");
     return parameters;
+}
+
+std::vector<std::byte> readLinuxPolicy(const char* path)
+{
+    if (path == nullptr)
+        return {};
+    const std::filesystem::path file {path};
+    if (!std::filesystem::is_regular_file(file))
+        throw std::invalid_argument("Linux boot policy is not a regular file");
+    const auto size = std::filesystem::file_size(file);
+    if (size < 6 || size > (64U << 20) || size % 4 != 0)
+        throw std::invalid_argument("Linux boot policy has an invalid size");
+    std::vector<std::byte> bytes(static_cast<std::size_t>(size));
+    std::ifstream input(file, std::ios::binary);
+    if (!input.read(reinterpret_cast<char*>(bytes.data()),
+            static_cast<std::streamsize>(bytes.size())) ||
+        std::memcmp(bytes.data(), "070701", 6) != 0)
+        throw std::invalid_argument("Linux boot policy is not a newc archive");
+    return bytes;
 }
 
 /* The run's initrd, a file in the application's temporary directory that the
@@ -1356,7 +1378,8 @@ class RunInitrd final {
 public:
     /* `payload` is a padded newc segment appended after the runtime's own,
      * whose files replace the runtime's. */
-    RunInitrd(bool ext4Image, std::span<const std::byte> payload)
+    RunInitrd(bool ext4Image, bool persistentOverlay,
+              std::span<const std::byte> payload)
     {
         const std::filesystem::path directory {
             NSTemporaryDirectory().fileSystemRepresentation};
@@ -1388,7 +1411,7 @@ public:
                     uml_boot_init_end - uml_boot_init_start)}),
             0755,
             0);
-        const std::string parameters = bootParameters(ext4Image);
+        const std::string parameters = bootParameters(ext4Image, persistentOverlay);
         archive.addFile(
             "/boot.env",
             std::as_bytes(std::span {parameters.data(), parameters.size()}),
@@ -1412,6 +1435,14 @@ public:
 
     RunInitrd(const RunInitrd&) = delete;
     RunInitrd& operator=(const RunInitrd&) = delete;
+
+    void append(std::span<const std::byte> payload) const
+    {
+        std::ofstream output(path_, std::ios::binary | std::ios::app);
+        if (!output.write(reinterpret_cast<const char*>(payload.data()),
+                static_cast<std::streamsize>(payload.size())))
+            throw std::runtime_error("cannot append the automation boot payload");
+    }
 
     [[nodiscard]] std::string kernelArgument() const
     {
@@ -1466,6 +1497,7 @@ struct GuestRequest final {
     std::string rootfsPath;
     std::string overlayPath;
     bool derivativeRootfs {};
+    bool appArmor {};
     /* The run's initrd and the systemd target, both fixed for the launch. */
     std::string initrdArgument;
     std::string systemdUnit;
@@ -2028,12 +2060,17 @@ private:
             cameras_.layout,
             request_.identity.serial);
 #else
-        /* A sealed ext4 derivative is attached read-only; the per-run /init
-         * mounts either kind of image beneath the overlay. */
-        if (request_.derivativeRootfs)
-            arguments.emplace_back("ubd0cr=" + request_.rootfsPath);
+        /* Both base-image formats are read-only. EROFS alone does not stop
+         * UBD opening its host file for writing, which an iOS app bundle
+         * forbids. The separate overlay owns every persistent write. */
+        arguments.emplace_back("ubd0cr=" + request_.rootfsPath);
         arguments.emplace_back("systemd.unit=" + request_.systemdUnit);
         arguments.emplace_back("plymouth.enable=0");
+#if !KERNARIUM_RUNTIME_ANDROID_GUEST
+        if (request_.appArmor)
+            arguments.emplace_back(
+                "lsm=landlock,lockdown,yama,loadpin,safesetid,apparmor,ipe,bpf");
+#endif
 #endif
         boot->pointers.reserve(arguments.size());
         for (const auto& argument : arguments)
@@ -2270,6 +2307,27 @@ int runtimeRun(
             std::fputs("Kernarium: invalid boot request\n", stderr);
             return -UML_EMULATOR_INVALID_ARGUMENT;
         }
+#if !KERNARIUM_RUNTIME_ANDROID_GUEST
+        const bool hasPersistentOverlay = boot->struct_size >=
+            offsetof(kernarium_runtime_boot, linux_overlay_persistent) +
+                sizeof(boot->linux_overlay_persistent);
+        if (hasPersistentOverlay && boot->linux_overlay_persistent > 1) {
+            std::fputs("Kernarium: invalid Linux overlay policy\n", stderr);
+            return -UML_EMULATOR_INVALID_ARGUMENT;
+        }
+        const bool persistentOverlay = hasPersistentOverlay &&
+            boot->linux_overlay_persistent != 0;
+        const bool hasAppArmor = boot->struct_size >=
+            offsetof(kernarium_runtime_boot, linux_apparmor) +
+                sizeof(boot->linux_apparmor);
+        if (hasAppArmor && boot->linux_apparmor > 1)
+            throw std::invalid_argument("invalid Linux AppArmor selection");
+        const auto linuxPolicy = readLinuxPolicy(
+            boot->struct_size >=
+                    offsetof(kernarium_runtime_boot, linux_policy_archive_path) +
+                        sizeof(boot->linux_policy_archive_path)
+                ? boot->linux_policy_archive_path : nullptr);
+#endif
         /* Read only from a request large enough to hold it, and no further
          * than the longest key: the string is the caller's. */
         std::string adbPublicKey;
@@ -2461,6 +2519,7 @@ int runtimeRun(
         }
 #else
         const char* rootfsPath = boot->rootfs_path;
+        request.appArmor = hasAppArmor && boot->linux_apparmor != 0;
         const char* overlayPath = boot->overlay_path;
         if (!usableFile(rootfsPath) || !immutableExt4Rootfs(rootfsPath) ||
             !usableFile(overlayPath)) {
@@ -2619,15 +2678,20 @@ int runtimeRun(
                         : automation->systemdUnit().c_str());
             const RunInitrd initrd {
                 request.derivativeRootfs,
-                automation ? automation->payload()
-                           : std::span<const std::byte> {}};
+                persistentOverlay,
+                linuxPolicy};
+            if (automation && !automation->payload().empty())
+                initrd.append(automation->payload());
             request.automation = automation.get();
             request.systemdUnit =
                 automation && !automation->systemdUnit().empty()
                 ? automation->systemdUnit()
                 : std::string {"graphical.target"};
 #else
-            const RunInitrd initrd {request.derivativeRootfs, {}};
+            const RunInitrd initrd {
+                request.derivativeRootfs,
+                persistentOverlay,
+                linuxPolicy};
             request.systemdUnit = "graphical.target";
 #endif
             request.initrdArgument = initrd.kernelArgument();

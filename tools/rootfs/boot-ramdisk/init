@@ -21,6 +21,7 @@ root=/dev/ubda
 root_type=erofs
 upper=tmpfs
 upper_device=
+upper_persistent=0
 grow=0
 entry=/sbin/init
 
@@ -39,6 +40,7 @@ read_parameters()
 		UML_BOOT_ROOT_TYPE) root_type=$value ;;
 		UML_BOOT_UPPER) upper=$value ;;
 		UML_BOOT_UPPER_DEVICE) upper_device=$value ;;
+		UML_BOOT_UPPER_PERSISTENT) upper_persistent=$value ;;
 		UML_BOOT_GROW) grow=$value ;;
 		UML_BOOT_ENTRY) entry=$value ;;
 		*) fail "unknown /boot.env parameter: ${line%%=*}" ;;
@@ -52,10 +54,45 @@ read_parameters()
 	*) fail "UML_BOOT_UPPER_DEVICE needs UML_BOOT_UPPER=ext4" ;;
 	esac
 	case "$grow" in 0|1) ;; *) fail "UML_BOOT_GROW must be 0 or 1" ;; esac
+	case "$upper_persistent:$upper" in
+	0:*) ;;
+	1:ext4) ;;
+	*) fail "UML_BOOT_UPPER_PERSISTENT needs 0, or 1 with an ext4 upper" ;;
+	esac
 	case "$entry" in /*) ;; *) fail "UML_BOOT_ENTRY must be absolute: $entry" ;; esac
 	if [ "$grow" = 1 ] && [ "$upper" != none ]; then
 		fail "UML_BOOT_GROW needs UML_BOOT_UPPER=none"
 	fi
+}
+
+# A persistent upper is formatted only when its host-created first sector
+# grants initialization. Consume that grant before formatting: an interrupted
+# format or a damaged filesystem must fail rather than erase user data.
+prepare_persistent_upper()
+{
+	case "$(blkid "$upper_device" 2>/dev/null)" in
+	*TYPE=\"ext4\"*)
+		e2fsck -p "$upper_device"
+		status=$?
+		[ "$status" -lt 4 ] || fail "upper filesystem check failed: $status"
+		return
+		;;
+	esac
+	marker=$(busybox dd if="$upper_device" bs=26 count=1 2>/dev/null) || \
+		fail "cannot read upper initialization grant"
+	[ "$marker" = UML_BOOT_EMPTY_OVERLAY_V1 ] || \
+		fail "persistent upper is neither ext4 nor a new overlay disk"
+	busybox dd if=/dev/zero of="$upper_device" bs=26 count=1 \
+		conv=notrunc 2>/dev/null || fail "cannot consume upper initialization grant"
+	sync
+	format_upper
+}
+
+format_upper()
+{
+	mkfs.ext4 -F -q -m 0 \
+		-E nodiscard,lazy_itable_init=1,lazy_journal_init=1 \
+		"$upper_device" || fail "cannot format $upper_device"
 }
 
 wait_for_device()
@@ -185,9 +222,11 @@ mount_overlay_root()
 		;;
 	ext4)
 		wait_for_device "$upper_device"
-		mkfs.ext4 -F -q -m 0 \
-			-E nodiscard,lazy_itable_init=1,lazy_journal_init=1 \
-			"$upper_device" || fail "cannot format $upper_device"
+		if [ "$upper_persistent" = 1 ]; then
+			prepare_persistent_upper
+		else
+			format_upper
+		fi
 		mount -t ext4 -o noatime,nosuid,nodev "$upper_device" /state || \
 			fail "cannot mount $upper_device"
 		;;
@@ -199,7 +238,7 @@ mount_overlay_root()
 		overlay /newroot || fail "cannot mount the overlay"
 	[ "$upper" = ext4 ] || return 0
 	for name in docker containerd; do
-		mkdir -m 0711 "/state/$name" && \
+		{ [ -d "/state/$name" ] || mkdir -m 0711 "/state/$name"; } && \
 			mkdir -p "/newroot/var/lib/$name" && \
 			mount -o bind "/state/$name" "/newroot/var/lib/$name" || \
 			fail "cannot bind the $name state"

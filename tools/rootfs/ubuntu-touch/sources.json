@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "release": "ubuntu-touch-24.04-1.x-pdk-470-arm64",
+  "archive": {
+    "url": "https://ci.ubports.com/job/ubuntu-touch-rootfs/job/ubports%252F24.04-1.x/470/artifact/ubuntu-touch-pdk-img-arm64.raw.xz",
+    "sha256": "b792a5f04c1433a817070a36bee9c3394a85027dac3b1ffdf6190cd63f567460"
+  },
+  "qtwayland": {
+    "package": "qtwayland5",
+    "version": "5.15.13-1",
+    "architecture": "arm64",
+    "sha256": "061e722d037398123ec8550f17facaec7ab927a427f2f588bc3278d6862cce69"
+  },
+  "lomiri_shell": {
+    "path": "usr/share/lomiri/Shell.qml",
+    "sha256": "f03220ecb1cf0a00e6c0c2887abc49ad5aa0e875e06fe964e5bf9999192453eb"
+  },
+  "disk": {
+    "size": 25000000000,
+    "sha256": "4330415ef58e96885b823dd37ca7380ac942fc79d5af39c48c1fd9bc3250eaf7",
+    "root_offset": 500000256,
+    "root_size": 24499999744
+  }
+}

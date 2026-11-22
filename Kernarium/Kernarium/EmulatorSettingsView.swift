@@ -11,6 +11,8 @@ struct EmulatorSettingsView: View {
     @State private var configuration: EmulatorConfiguration
     @State private var backgroundMode: BackgroundMode
     @State private var backgroundLimitMinutes: Int
+    @State private var selectedKeyboardSource: String
+    private let keyboardSource: Binding<String>?
 
     private let maximumVCPUCount: Int
     private let defaults: UserDefaults
@@ -34,8 +36,11 @@ struct EmulatorSettingsView: View {
     init(
         defaults: UserDefaults = .standard,
         physicalProcessorCount: Int = EmulatorConfiguration.physicalProcessorCount,
-        documentsDirectory: URL = RootfsImage.documentsDirectory
+        documentsDirectory: URL = RootfsImage.documentsDirectory,
+        keyboardSource: Binding<String>? = nil
     ) {
+        self.keyboardSource = keyboardSource
+        _selectedKeyboardSource = State(initialValue: keyboardSource?.wrappedValue ?? "ios")
         let loaded = EmulatorConfiguration.load(
             defaults: defaults,
             physicalProcessorCount: physicalProcessorCount,
@@ -143,6 +148,20 @@ struct EmulatorSettingsView: View {
                         in: EmulatorConfiguration.overlaySizeRangeGiB
                     )
                     .accessibilityIdentifier("overlaySizeStepper")
+                }
+
+                if keyboardSource != nil {
+                    Section("Keyboard") {
+                        Picker("On-screen keyboard", selection: $selectedKeyboardSource) {
+                            Text("iPhone keyboard").tag("ios")
+                            Text("Ubuntu Touch keyboard (experimental)").tag("ubuntu")
+                        }
+                        .pickerStyle(.menu)
+                        .accessibilityIdentifier("keyboardSourcePicker")
+                        Text("Keyboard source applies when Toucharium is reopened.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 // Unlike the rest of the form this applies at once, whatever
@@ -277,6 +296,7 @@ struct EmulatorSettingsView: View {
 
     private func save() {
         configuration.save(defaults: defaults)
+        keyboardSource?.wrappedValue = selectedKeyboardSource
         let background = BackgroundSettings(defaults: defaults)
         background.setMode(
             backgroundMode,

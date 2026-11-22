@@ -58,6 +58,14 @@ uml_add_tooling_test(
     TIMEOUT 60)
 
 uml_add_tooling_test(
+    NAME rootfs-persistent-upper
+    COMMAND ${Python3_EXECUTABLE} -B
+        ${PROJECT_SOURCE_DIR}/tests/tooling/rootfs/test_persistent_upper.py
+        --init ${PROJECT_SOURCE_DIR}/tools/rootfs/boot-ramdisk/init
+    LABELS rootfs;boot
+    TIMEOUT 60)
+
+uml_add_tooling_test(
     NAME rootfs-boot-base-contract
     COMMAND ${Python3_EXECUTABLE} -B
         ${PROJECT_SOURCE_DIR}/tests/tooling/rootfs/test_boot_base.py

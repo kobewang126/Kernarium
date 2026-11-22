@@ -129,6 +129,13 @@ afresh on `ubd1` (the sparse `kernarium-overlay.ext4` the application recreates
 in its temporary directory at each launch). `/init` then switches root into the
 image's own `/sbin/init`, which boots `graphical.target`.
 
+An application can opt into a persistent Linux overlay and supply its own
+boot-policy archive through the runtime boot request. The archive's `/payload`
+files are installed before the image's init, including on existing overlays;
+the application owns that policy. A Linux request may also select AppArmor
+instead of the kernel's default Smack module. Kernarium itself selects none
+of these overrides; [Toucharium](../Toucharium/README.md) owns its phone policy.
+
 Nothing is typed on the console and the runtime edits no image: accounts,
 device groups, getty and display-manager policy, network and resolver belong
 to the image. The KDE, Phrog and postmarketOS images Kernarium boots carry
@@ -137,7 +144,7 @@ unified `rootfs.erofs` carries none of it and boots to its own defaults.
 
 ## Automation runs
 
-The release runtime accepts no host payload and carries no test campaign.
+The release runtime reads no automation payload setting and carries no test campaign.
 Test and benchmark drivers package one of two automation variants instead, and
 Andarium's App Store configuration a third runtime; the packaging script
 (`scripts/package-ios-frameworks.sh`) checks that a release runtime carries

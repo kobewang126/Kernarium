@@ -23,6 +23,10 @@ configuration overlay. Every guest page is 4 KiB; the Darwin host page is
 16 KiB. The Virtio video decoder and encoder are built into every product
 ([wire contract](../common/video/README.md)).
 
+The Linux product builds Smack and AppArmor. Smack is the default; an Ubuntu
+Touch launch selects AppArmor through the kernel's `lsm=` argument so its
+Click application profiles can load.
+
 The contracts every product shares are in the
 [shared kernel README](../common/README.md). This README keeps the line's
 policy, its overlays, the x86_64 slice, and the build.

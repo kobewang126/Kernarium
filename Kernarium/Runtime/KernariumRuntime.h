@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define KERNARIUM_RUNTIME_API_VERSION 43U
+#define KERNARIUM_RUNTIME_API_VERSION 45U
 
 #if defined(__OBJC__)
 @class MTKView;
@@ -210,6 +210,20 @@ typedef struct kernarium_runtime_boot {
     const char* android_camera_calibration_path;
     const char* android_serial_number;
     const char* android_ethernet_mac;
+    /* Linux only: preserve the overlay filesystem across boots. A new disk
+     * carries UML_BOOT_EMPTY_OVERLAY_V1 followed by a newline at offset zero;
+     * init consumes that grant before its only format. Other non-ext4 disks
+     * fail closed. Zero retains the disposable overlay contract. */
+    uint32_t linux_overlay_persistent;
+    /* Linux only (API 45): select the kernel's AppArmor LSM at boot instead
+     * of its default module. Zero preserves the kernel default. */
+    uint32_t linux_apparmor;
+    /* Optional application-owned, padded newc archive appended to the boot
+     * initrd. Files below /payload are installed into the guest overlay before
+     * init. The archive is bounded to 64 MiB and retained across guest restarts.
+     * This explicit request works in production; automation environment
+     * overrides remain confined to automation runtimes. */
+    const char* linux_policy_archive_path;
 } kernarium_runtime_boot;
 
 /* What a launch's host GPU budget comes to, as the runtime evaluates it for

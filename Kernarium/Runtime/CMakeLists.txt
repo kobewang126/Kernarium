@@ -179,6 +179,8 @@ set_property(TARGET KernariumRuntime APPEND PROPERTY LINK_DEPENDS
 # loader ABI version the application checks before it loads a runtime, so it
 # moves exactly when the application and a runtime stop being interchangeable.
 # CMake fills the template from the MACOSX_FRAMEWORK_ properties below.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/KernariumRuntime.h")
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/KernariumRuntime.h"
     _kernarium_api_line
     REGEX "^#define KERNARIUM_RUNTIME_API_VERSION [0-9]+U$")

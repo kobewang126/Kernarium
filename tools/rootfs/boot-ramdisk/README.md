@@ -31,7 +31,8 @@ sysfs, mounts the root image at `/newroot`, installs `/payload` into it, and
 on success and `UML_BOOT_ERROR:<reason>` on any failure, which stops the guest.
 
 `/boot.env` holds `KEY=VALUE` lines (`UML_BOOT_ROOT`, `UML_BOOT_ROOT_TYPE`,
-`UML_BOOT_UPPER`, `UML_BOOT_UPPER_DEVICE`, `UML_BOOT_GROW`, `UML_BOOT_ENTRY`);
+`UML_BOOT_UPPER`, `UML_BOOT_UPPER_DEVICE`, `UML_BOOT_UPPER_PERSISTENT`,
+`UML_BOOT_GROW`, `UML_BOOT_ENTRY`);
 an unknown key is an error and `init` owns the values and defaults. The root is
 mounted one of three ways: `tmpfs` (the default) puts a throwaway tmpfs
 overlay above the read-only image, which Kernarium uses for every Linux
@@ -39,6 +40,14 @@ desktop; `ext4` is the same overlay on a device `/init` formats afresh, so its
 previous contents are lost; `none` makes the image itself the read-write root,
 as a starter disk or a one-image machine uses it.
 [`../starter/boot.env`](../starter/boot.env) selects `none` for starter disks.
+
+An ext4 upper with `UML_BOOT_UPPER_PERSISTENT=1` retains its filesystem across
+boots. Existing ext4 filesystems must pass a preen check before mounting.
+A new disk grants one initialization by carrying `UML_BOOT_EMPTY_OVERLAY_V1`
+followed by a newline at offset zero. The init consumes and syncs that grant
+before formatting. Other contents, failed checks and interrupted initialization
+stop the boot without formatting. Persistent disk creation and explicit recovery
+belong to the application; changing the root image does not recreate its upper.
 
 A payload replaces a file the image carries at the same path. A payload
 directory must not pass through a symlink in the image: images with a merged

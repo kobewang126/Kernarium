@@ -11,6 +11,9 @@ CONFIG_CHECKPOINT_RESTORE=y
 # Smack is the validated choice for this port; changing it invalidates the
 # recorded LTP results that depend on it.
 CONFIG_SECURITY_SMACK=y
+# Ubuntu Touch selects AppArmor through lsm= at launch; ordinary Linux
+# guests retain Smack and its validated policy.
+CONFIG_SECURITY_APPARMOR=y
 CONFIG_LSM="landlock,lockdown,yama,loadpin,safesetid,smack,ipe,bpf"
 
 # Desktop software uses what Android leaves out. SysV IPC backs PostgreSQL,
