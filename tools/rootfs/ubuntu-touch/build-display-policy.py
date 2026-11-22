@@ -38,22 +38,8 @@ def main() -> None:
             # QtMir can report native scale 1 for the virtual connector and
             # replace GRID_UNIT_PX. Correct only the shell's Units object;
             # Qt's global scale also changes Mir's window coordinates.
-            override = f'''
-    // SPDX-License-Identifier: GPL-3.0-only
-    readonly property real touchariumGridUnit: {grid_unit}
-    function touchariumApplyGridUnit() {{
-        if (units.gridUnit !== touchariumGridUnit)
-            units.gridUnit = touchariumGridUnit
-    }}
-    Connections {{
-        target: units
-        function onGridUnitChanged() {{ shell.touchariumApplyGridUnit() }}
-    }}
-    Timer {{
-        interval: 1; running: true; repeat: false; triggeredOnStart: true
-        onTriggered: shell.touchariumApplyGridUnit()
-    }}
-'''
+            override = (Path(__file__).parent / "lomiri-grid-unit.qml.in").read_text()
+            override = override.replace("@GRID_UNIT@", str(grid_unit))
             target = root / pin["path"]
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(shell.replace(anchor, anchor + override, 1))

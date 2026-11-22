@@ -44,6 +44,11 @@ These keep the licence they came with, under their own notices:
   own licence.
 - Third-party notices for the applications are the Acknowledgements of
   Andarium (`Andarium/Andarium/Shared/Acknowledgements.json`).
+- `tools/rootfs/ubuntu-touch/lomiri-grid-unit.qml.in` is GPL-3.0-only. It is
+  inserted into the guest's separately executed Lomiri Shell, preserving the
+  original Shell's copyright and licence notices. The producer that packages
+  it is GPL-2.0-or-later. Ubuntu Touch image packages retain their own licences;
+  their corresponding source and notices are separate from the producer.
 
 ## Checking
 

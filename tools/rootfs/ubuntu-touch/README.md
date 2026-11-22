@@ -28,6 +28,14 @@ rendering policy retain their existing scale.
 Maliit's service applies the selected visibility policy after the Lomiri user
 bus starts; switching modes takes effect on the next application launch.
 
+The producer scripts are GPL-2.0-or-later. `lomiri-grid-unit.qml.in` is the
+GPL-3.0-only fragment inserted into the pinned Lomiri Shell, whose copyright
+and licence notices are preserved. The output image and boot archives contain
+components under their individual licences; repackaging does not relicense
+them. Their binary distribution requires the applicable notices and exact
+corresponding sources. The upstream image digest is an input identity, not a
+substitute for those sources.
+
 `sources.json` pins the official archive and raw disk. On Linux, decompress the
 archive and run the producer as root with erofs-utils installed:
 

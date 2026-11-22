@@ -5,6 +5,12 @@ Run a real Linux kernel natively on iOS, through the magic of [User-mode Linux](
 
 ## Apps
 
+### Toucharium
+
+An Ubuntu Touch host built on the Kernarium runtime. Its application is under
+[`Toucharium/`](Toucharium/README.md), and its guest image producer is under
+[`tools/rootfs/ubuntu-touch/`](tools/rootfs/ubuntu-touch/README.md).
+
 ### Andarium
 
 An Android emulator app built on the Kernarium runtime is available in [TestFlight beta](https://testflight.apple.com/join/qyPvJTUE). Source code is available under [`Andarium/`](/Andarium/).

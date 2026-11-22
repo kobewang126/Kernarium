@@ -20,6 +20,19 @@ to Lomiri; iPhone mode suppresses the guest keyboard.
 The experimental Ubuntu keyboard can submit a black surface on the Simulator;
 iPhone keyboard mode is the default.
 
+## Source and licensing
+
+Toucharium extends Kernarium and uses the official UBports userspace. Host code
+and first-party image tooling follow the repository's GPL-2.0-or-later licence.
+The Lomiri QML override retains GPL-3.0-only; guest packages retain their own
+licences. See [the licensing guide](../LICENSES/README.md).
+
+The source tree carries the application, kernel configuration and patch series,
+and image-policy producers. Base images and packaged applications are separate
+binary artifacts. Distributing them also requires the applicable notices and
+corresponding source for the exact versions they contain; the image producer
+and its input digests alone do not supply all guest package sources.
+
 The application selects the image produced by
 [`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md) on first
 launch. An optional bundled image is used directly from the read-only application bundle
