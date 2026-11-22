@@ -104,7 +104,8 @@ container from another process.
 
 ## Store builds
 
-The scheme archives the `AppStore` configuration. It uses the store loader and
+The scheme archives the iPhone-only `AppStore` configuration. Mac distribution
+as Designed for iPhone or iPad is disabled for that configuration. It uses the store loader and
 runtime without JIT, console input, display mirroring or automation overrides;
 Picture in Picture is unavailable and the serial console is read-only in that
 configuration. Ordinary Debug and
