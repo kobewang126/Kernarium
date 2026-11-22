@@ -23,6 +23,10 @@ iPhone keyboard mode is the default.
 The application uses the original Toucharium mark in
 `Branding/Toucharium.svg`. From the repository root,
 `swift Toucharium/scripts/render-icon.swift` renders its opaque App Store icon.
+The application privacy manifest declares local settings, file metadata,
+storage capacity and elapsed-time access; it declares no tracking or collected
+data. Check built application and framework manifests with
+`python3 scripts/check-privacy-manifests.py <application.app>`.
 
 ## Source and licensing
 
