@@ -18,6 +18,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Toucharium uses the camera to provide camera input to the Ubuntu Touch environment when camera access is requested.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Toucharium uses the microphone when you enable it for Ubuntu Touch.</string>
 	<key>UIApplicationSceneManifest</key>

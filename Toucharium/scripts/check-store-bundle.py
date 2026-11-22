@@ -42,6 +42,9 @@ def main() -> int:
         problems.append("store configuration must target iPhone only")
     if info.get("ITSAppUsesNonExemptEncryption") is not False:
         problems.append("declare the export-compliance encryption answer")
+    for key in ("NSCameraUsageDescription", "NSMicrophoneUsageDescription"):
+        if not isinstance(info.get(key), str) or not info[key].strip():
+            problems.append(f"{key}: provide a purpose string for the embedded runtime")
     if "UIBackgroundModes" in info:
         problems.append("store configuration must not declare audio background execution")
     for key in ("GuestPrivacyPolicyURL", "GuestSupportURL", "GuestSourceURL"):
