@@ -23,7 +23,7 @@ application access to the virtual GPU device information. System Wayland
 libraries remain part of the image. The compatibility library temporarily
 completes the Mir platform image callbacks for the pinned Mesa ABI; its owner
 and canonical build entry point are in [`gpu-compat`](gpu-compat/README.md).
-The app policy selects iPhone or experimental Ubuntu keyboard mode at boot.
+The app policy selects iPhone or Ubuntu keyboard mode at boot.
 `build-display-policy.py` packages display-density overrides separately from
 the plugins. The app appends the override matching the boot display density,
 keeping Lomiri's grid-unit and web-content density aligned with Retina.

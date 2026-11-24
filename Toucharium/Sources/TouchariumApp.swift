@@ -56,7 +56,7 @@ struct TouchariumApp: App {
             .appendingPathComponent("UbuntuTouch", isDirectory: true)
         EmulatorLauncher.shared.linuxAppArmor = true
         EmulatorLauncher.shared.bundledLinuxImage = bundledImage
-        let policyName = preferences.string(forKey: "toucharium.keyboardSource") == "ubuntu"
+        let policyName = (preferences.string(forKey: "toucharium.keyboardSource") ?? "ubuntu") == "ubuntu"
             ? "TouchariumUbuntuKeyboardPolicy" : "TouchariumGuestPolicy"
         guard let policy = Bundle.main.url(
             forResource: policyName, withExtension: "cpio"
@@ -92,7 +92,7 @@ struct TouchariumApp: App {
 }
 
 private struct TouchariumRootView: View {
-    @AppStorage("toucharium.keyboardSource") private var keyboardSource = "ios"
+    @AppStorage("toucharium.keyboardSource") private var keyboardSource = "ubuntu"
 
     var body: some View {
         ContentView(controlsBelowGuest: true, keyboardSource: $keyboardSource)

@@ -10,6 +10,10 @@ final class UbuntuTouchInteractionTests: XCTestCase {
         app.buttons["settingsButton"].tap()
         let source = app.buttons["keyboardSourcePicker"]
         XCTAssertTrue(source.waitForExistence(timeout: 5))
+        for _ in 0..<4 {
+            if source.isHittable { break }
+            app.swipeUp()
+        }
         source.tap()
         let choice = app.buttons[name]
         XCTAssertTrue(choice.waitForExistence(timeout: 5))
@@ -29,12 +33,12 @@ final class UbuntuTouchInteractionTests: XCTestCase {
         app.activate()
         XCTAssertTrue(app.buttons["settingsButton"].waitForExistence(timeout: 15))
         let initiallyEnabled = app.buttons["keyboardButton"].isEnabled
-        selectKeyboard(initiallyEnabled ? "Ubuntu Touch keyboard (experimental)" : "iPhone keyboard",
+        selectKeyboard(initiallyEnabled ? "Ubuntu Touch keyboard" : "iPhone keyboard",
                        in: app, save: false)
         XCTAssertEqual(app.buttons["keyboardButton"].isEnabled, initiallyEnabled)
-        let names = app.buttons["keyboardButton"].isEnabled
-            ? ["Ubuntu Touch keyboard (experimental)", "iPhone keyboard"]
-            : ["iPhone keyboard", "Ubuntu Touch keyboard (experimental)", "iPhone keyboard"]
+        let names = initiallyEnabled
+            ? ["Ubuntu Touch keyboard", "iPhone keyboard"]
+            : ["iPhone keyboard", "Ubuntu Touch keyboard"]
         for name in names {
             selectKeyboard(name, in: app)
             XCTAssertEqual(app.buttons["keyboardButton"].isEnabled,

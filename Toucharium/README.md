@@ -17,8 +17,8 @@ Emulator Settings selects the iPhone or Ubuntu Touch on-screen keyboard
 for the next application launch; Save applies the selection and Cancel discards
 it. Ubuntu mode leaves text focus and dismissal
 to Lomiri; iPhone mode suppresses the guest keyboard.
-The experimental Ubuntu keyboard can submit a black surface on the Simulator;
-iPhone keyboard mode is the default.
+Ubuntu Touch keyboard mode is the default when no keyboard preference has been saved.
+Existing selections are preserved.
 
 The application uses the original Toucharium mark in
 `Branding/Toucharium.svg`. From the repository root,

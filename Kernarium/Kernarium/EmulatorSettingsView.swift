@@ -154,7 +154,7 @@ struct EmulatorSettingsView: View {
                     Section("Keyboard") {
                         Picker("On-screen keyboard", selection: $selectedKeyboardSource) {
                             Text("iPhone keyboard").tag("ios")
-                            Text("Ubuntu Touch keyboard (experimental)").tag("ubuntu")
+                            Text("Ubuntu Touch keyboard").tag("ubuntu")
                         }
                         .pickerStyle(.menu)
                         .accessibilityIdentifier("keyboardSourcePicker")
