@@ -75,6 +75,14 @@ uml_add_tooling_test(
 
 if(TARGET uml-initramfs)
     uml_add_tooling_test(
+        NAME rootfs-ubuntu-touch-policy
+        COMMAND ${Python3_EXECUTABLE} -B
+            ${PROJECT_SOURCE_DIR}/tests/tooling/rootfs/test_ubuntu_touch_policy.py
+            --producer ${PROJECT_SOURCE_DIR}/tools/rootfs/ubuntu-touch
+            --initramfs $<TARGET_FILE:uml-initramfs>
+        LABELS rootfs;boot
+        TIMEOUT 90)
+    uml_add_tooling_test(
         NAME rootfs-initramfs-host-tool
         COMMAND ${Python3_EXECUTABLE} -B
             ${PROJECT_SOURCE_DIR}/tests/tooling/rootfs/test_uml_initramfs.py

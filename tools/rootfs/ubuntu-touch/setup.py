@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 
@@ -119,7 +120,7 @@ FORM_FACTOR=handset
 ''')
 
 
-def install_runtime_policy(root: Path, *, software_opengl: bool = False) -> None:
+def install_runtime_policy(root: Path, *, native_gpu: bool = False) -> None:
     install_display_policy(root)
     write(root, "etc/udev/rules.d/70-toucharium-virtual-devices.rules", '''# SPDX-License-Identifier: GPL-2.0-or-later
 SUBSYSTEM=="drm", KERNEL=="card[0-9]*", GROUP="video", MODE="0660", TAG+="uaccess", TAG+="seat"
@@ -167,14 +168,42 @@ Restart=on-failure
 RestartSec=1
 TimeoutStopSec=5
 ''')
-    # Only launched applications use software GL; Lomiri retains its renderer.
-    if software_opengl:
-        write(root, "etc/systemd/user/lomiri-app-launch--application-.service.d/90-toucharium-renderer.conf", '''# SPDX-License-Identifier: GPL-2.0-or-later
+    if native_gpu:
+        source = Path(__file__).resolve().parent
+        pin = json.loads((source / "sources.json").read_text())["mesa"]
+        write(root, "etc/toucharium/mesa.json", json.dumps(pin) + "\n")
+        write(root, "etc/toucharium/legacy-wayland.json",
+              (source / "legacy-wayland.json").read_text())
+        write(root, "usr/libexec/toucharium-configure-gpu",
+              (source / "configure-gpu.py").read_text(), 0o755)
+        write(root, "usr/share/apparmor/hardware/graphics.d/toucharium-virtio",
+              "# SPDX-License-Identifier: GPL-2.0-or-later\n"
+              "/sys/devices/virtio-uml-cmdline/virtio-uml.0/uevent r,\n")
+        write(root, "etc/systemd/user/lomiri-app-launch--application-.service.d/90-toucharium-renderer.conf", """# SPDX-License-Identifier: GPL-2.0-or-later
 [Service]
-Environment=QT_QPA_PLATFORM=wayland-egl
-Environment=LIBGL_ALWAYS_SOFTWARE=1
-Environment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-''')
+Environment=QT_QPA_PLATFORM=ubuntumirclient
+Environment=LIBGL_ALWAYS_SOFTWARE=0
+""")
+        write(root, "etc/systemd/user/lomiri-full-greeter.service.d/99-toucharium-gpu.conf", """# SPDX-License-Identifier: GPL-2.0-or-later
+[Service]
+Environment=LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libtoucharium-mir-gpu.so
+""")
+        write(root, "etc/systemd/system/toucharium-gpu-policy.service", """# SPDX-License-Identifier: GPL-2.0-or-later
+[Unit]
+Description=Validate guest graphics and load virtual GPU access policy
+After=apparmor.service
+Before=lightdm.service
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/toucharium-configure-gpu
+TimeoutStartSec=120
+RemainAfterExit=yes
+""")
+        write(root, "etc/systemd/system/lightdm.service.d/94-toucharium-gpu.conf", """# SPDX-License-Identifier: GPL-2.0-or-later
+[Unit]
+Requires=toucharium-gpu-policy.service
+After=toucharium-gpu-policy.service
+""")
 
 
 def main() -> None:

@@ -1,0 +1,24 @@
+{
+  "package": "qtwayland5",
+  "version": "5.15.13-1",
+  "archive_sha256": "061e722d037398123ec8550f17facaec7ab927a427f2f588bc3278d6862cce69",
+  "files": {
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/platforms/libqwayland-egl.so": "bd2f6a6d37606f859377c50046d0086aece208eac1af2339573dac9d1a0f5446",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/platforms/libqwayland-generic.so": "9c2c265b74f2b907be355f7c935e693fe3056e429f1c3c686ac92c17c641deae",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/platforms/libqwayland-xcomposite-egl.so": "40f8a88a7e9045f93e8e25fd7aacd6c17bd0f672eb11ea65ece6ba09df11b940",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/platforms/libqwayland-xcomposite-glx.so": "18d2686647493c5fc5848d1f139cdf4bffba7171d926f19c9d29ccd0e2481ed8",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-decoration-client/libbradient.so": "dd1a87e3fe45a89964f46899e8e0499350694f769e86058a5474f1a6f017916a",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libdrm-egl-server.so": "a968bba620b1cce01248c26f2d54e1ed89272fca11baf264cf5bc2fe5f246970",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so": "fe6dd7b72f5c90bbbd7bd54a1fde750eabc0610f99796de7c2f1a1b58e4ee63b",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libshm-emulation-server.so": "d254e1565c74a466807f8c03236ed44d5dcbcd9836cde2d661c95f1c060f461a",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libvulkan-server.so": "d43ec3c9ac0752fbd9695ee0b266609a01afca73a3d7f7ecf05e8181903b6252",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libxcomposite-egl.so": "ea36653288999adcf94886583502614b8151abc0c06ea3c09aba6b54f7a4efb6",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-graphics-integration-client/libxcomposite-glx.so": "b79add4e31cd066efb5e687d477ce1b0db399dc81aa1e9a725ace428e2a26565",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libfullscreen-shell-v1.so": "a2c8e36fd84d1a3e0d1b23c96139e8e943f6d3bc5abfa9750471086b429124c8",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libivi-shell.so": "e6049626730c70a11e0972c148acaaf6563b15cb6b6b6ab99effb5e3f07abd86",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libwl-shell.so": "71845dd1986b6fe52ab79f2058810b30b6e344a711e1f0354b798c40334754fb",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libxdg-shell-v5.so": "53bb68da172445bb320c406d34ca9f8ef9a52faa889cc8e2a0aca29f4b703fad",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libxdg-shell-v6.so": "232aa2edb9857f821733af4073dfe7a1862310b8d54ebf763379080f00197a3e",
+    "usr/lib/aarch64-linux-gnu/qt5/plugins/wayland-shell-integration/libxdg-shell.so": "264d04f765cdf74af8cc17fb6e97afbbb6ce3961fda00bd4ff407f6812a49944"
+  }
+}

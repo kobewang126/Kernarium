@@ -5,12 +5,6 @@
     "url": "https://ci.ubports.com/job/ubuntu-touch-rootfs/job/ubports%252F24.04-1.x/470/artifact/ubuntu-touch-pdk-img-arm64.raw.xz",
     "sha256": "b792a5f04c1433a817070a36bee9c3394a85027dac3b1ffdf6190cd63f567460"
   },
-  "qtwayland": {
-    "package": "qtwayland5",
-    "version": "5.15.13-1",
-    "architecture": "arm64",
-    "sha256": "061e722d037398123ec8550f17facaec7ab927a427f2f588bc3278d6862cce69"
-  },
   "lomiri_shell": {
     "path": "usr/share/lomiri/Shell.qml",
     "sha256": "f03220ecb1cf0a00e6c0c2887abc49ad5aa0e875e06fe964e5bf9999192453eb"
@@ -20,5 +14,12 @@
     "sha256": "4330415ef58e96885b823dd37ca7380ac942fc79d5af39c48c1fd9bc3250eaf7",
     "root_offset": 500000256,
     "root_size": 24499999744
+  },
+  "mesa": {
+    "version": "24.0.9-0ubuntu0.1+0~20250617143103.2+ubports~dev~1.gbp48a5fc",
+    "libraries": {
+      "usr/lib/aarch64-linux-gnu/libgbm.so.1.0.0": "bb2af01ce02c0b007f954f308c2ddd2ceb8b2d5746eda2a10ccd8960996f6756",
+      "usr/lib/aarch64-linux-gnu/libEGL_mesa.so.0.0.0": "50a68284279be49a203637fcd538d838294f83688efb4b5f134bc17610421e0c"
+    }
   }
 }

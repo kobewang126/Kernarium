@@ -12,11 +12,17 @@ both the system compositor and Lomiri's nested Mir server after LightDM
 activates input devices, and runs again when LightDM restarts.
 The input policy is embedded in the image and its digest is recorded in the
 image receipt. `build-policy.py` packages the same policy with the pinned Qt
-Wayland plugins and an application-only software OpenGL override into a newc
-archive. It verifies the package digest and uses `uml-initramfs` to generate
+native Mir GPU configuration and a version-pinned Mesa compatibility library into a newc
+archive. It verifies the library receipt and uses `uml-initramfs` to generate
 the archive without network access. Toucharium embeds it and supplies it on
 ordinary boots, so an installed application's policy can update an existing
 persistent overlay before the Ubuntu session starts.
+The graphics startup service checks the guest Mesa library digests, removes
+only unchanged client plugins installed by the legacy policy, and reloads
+application access to the virtual GPU device information. System Wayland
+libraries remain part of the image. The compatibility library temporarily
+completes the Mir platform image callbacks for the pinned Mesa ABI; its owner
+and canonical build entry point are in [`gpu-compat`](gpu-compat/README.md).
 The app policy selects iPhone or experimental Ubuntu keyboard mode at boot.
 `build-display-policy.py` packages display-density overrides separately from
 the plugins. The app appends the override matching the boot display density,

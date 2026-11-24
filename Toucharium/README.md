@@ -81,8 +81,9 @@ Simulator builds use the separately packaged software-rendering slices;
 Designed for iPad uses the device slices and their Metal graphics stack.
 Ubuntu Touch keeps its writable overlay in Documents/UbuntuTouch. Cover
 installations preserve it. The application selects AppArmor and includes a
-boot-policy archive that applies its portrait phone layout, touchscreen mapping
-and application software OpenGL configuration before systemd starts. The desktop
+boot-policy archive that applies its portrait phone layout and touchscreen mapping
+before systemd starts. Applications use native Mir and VirGL; the guest
+graphics policy validates the pinned Mesa libraries before the session starts. The desktop
 keeps its existing renderer. Application updates replace this policy without
 replacing the rootfs or requiring an SSH session.
 
@@ -91,8 +92,8 @@ Small display-policy archives override its layout for the actual boot density;
 the application combines the selected override with its keyboard policy.
 The display producer requires the original Lomiri Shell QML from the pinned
 rootfs and verifies its digest before generating shell overrides.
-It requires the pinned Qt Wayland Debian package, the CMake-built
-`uml-initramfs` host tool and zstd. The owning producer and package pin are in
+It requires a verified guest GPU compatibility artifact, the CMake-built
+`uml-initramfs` host tool. The owning producer and package pin are in
 [`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md).
 
 For a local Mac test, the hosted harness can import the pinned image from a
