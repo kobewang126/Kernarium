@@ -10,6 +10,9 @@ struct TouchariumApp: App {
         )[0]
         // Resolve the verified import destination before the launcher snapshots settings.
         let preferences = UserDefaults.standard
+        preferences.register(defaults: [
+            "toucharium.shellMode": UIDevice.current.userInterfaceIdiom == .pad ? "desktop" : "phone"
+        ])
         if preferences.integer(forKey: "toucharium.phoneDisplayPolicyVersion") < 2 {
             preferences.set(true, forKey: "emulator.retinaMode")
             preferences.set(true, forKey: "emulator.autoResizeGuest")

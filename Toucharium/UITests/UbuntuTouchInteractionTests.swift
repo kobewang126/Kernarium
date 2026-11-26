@@ -1,10 +1,102 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import XCTest
+import UIKit
 
-/// An opt-in probe of the already booted guest. Attachments show the actual
+/// Opt-in probes of host controls and the guest. Attachments show the actual
 /// guest response; completing the tap alone is not an interaction verdict.
 final class UbuntuTouchInteractionTests: XCTestCase {
+    @MainActor
+    func testPhoneLandscapeControls() throws {
+        guard UIDevice.current.userInterfaceIdiom == .phone else {
+            throw XCTSkip("requires an iPhone")
+        }
+        guard ProcessInfo.processInfo.environment["TOUCHARIUM_INTERACTION_PROBE"] == "1" else {
+            throw XCTSkip("requires an imported image on an iPhone")
+        }
+        let app = XCUIApplication(bundleIdentifier:
+            ProcessInfo.processInfo.environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let display = app.descendants(matching: .any)["framebufferView"]
+        let settings = app.buttons["settingsButton"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10))
+        let portraitSettingsCenter = CGPoint(x: settings.frame.midX, y: settings.frame.midY)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .landscapeRight] {
+            XCUIDevice.shared.orientation = orientation
+            let moved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                display.exists && settings.exists && display.frame.width > display.frame.height
+                    && settings.frame.minX >= display.frame.maxX
+                    && display.frame.minY >= app.frame.minY + 24
+                    && display.frame.maxY > app.frame.maxY - 40
+            }, object: app)
+            XCTAssertEqual(XCTWaiter.wait(for: [moved], timeout: 15), .completed)
+            XCTAssertTrue(settings.isHittable)
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            attachment.name = "phone-landscape-controls-\(orientation.rawValue)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        XCUIDevice.shared.orientation = .portrait
+        let restored = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            display.exists && display.frame.width < display.frame.height
+        }, object: app)
+        let result = XCTWaiter.wait(for: [restored], timeout: 15)
+        // Simulator accessibility can temporarily omit the rotated control
+        // subtree. Exercise its original portrait target and verify the sheet.
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(
+            dx: portraitSettingsCenter.x, dy: portraitSettingsCenter.y)).tap()
+        XCTAssertTrue(app.buttons["settingsSaveButton"].waitForExistence(timeout: 10))
+        app.buttons["Cancel"].tap()
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = "phone-portrait-restored"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertEqual(result, .completed,
+                       "display=\(display.exists ? String(describing: display.frame) : "missing"), "
+                       + "settings=\(settings.exists ? String(describing: settings.frame) : "missing")")
+    }
+
+    @MainActor
+    func testPadControlsRemainBelowGuest() async throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("requires an iPad")
+        }
+        guard ProcessInfo.processInfo.environment["TOUCHARIUM_INTERACTION_PROBE"] == "1" else {
+            throw XCTSkip("requires an imported image on an iPad")
+        }
+        let app = XCUIApplication(bundleIdentifier:
+            ProcessInfo.processInfo.environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
+        if let forwarding = ProcessInfo.processInfo.environment["TOUCHARIUM_LAYOUT_HOST_FORWARD"] {
+            app.launchEnvironment["KERNARIUM_HOST_FORWARD"] = forwarding
+        }
+        app.launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        if let value = ProcessInfo.processInfo.environment["TOUCHARIUM_LAYOUT_GUEST_WARMUP_SECONDS"],
+           let seconds = Double(value), seconds.isFinite, seconds > 0, seconds <= 180 {
+            try await Task.sleep(for: .seconds(seconds))
+        }
+        let display = app.descendants(matching: .any)["framebufferView"]
+        let settings = app.buttons["settingsButton"]
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft, .landscapeRight, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            let below = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                display.exists && settings.exists && settings.frame.minY >= display.frame.maxY
+            }, object: app)
+            let result = XCTWaiter.wait(for: [below], timeout: 15)
+            try await Task.sleep(for: .seconds(3))
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            attachment.name = "pad-controls-\(orientation.rawValue)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            XCTAssertEqual(result, .completed,
+                           "display=\(display.exists ? String(describing: display.frame) : "missing"), "
+                           + "settings=\(settings.exists ? String(describing: settings.frame) : "missing")")
+            XCTAssertTrue(settings.isHittable)
+        }
+    }
+
     @MainActor
     func testShellModeSelection() throws {
         guard ProcessInfo.processInfo.environment["TOUCHARIUM_INTERACTION_PROBE"] == "1" else {

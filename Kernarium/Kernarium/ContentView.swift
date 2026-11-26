@@ -41,6 +41,15 @@ struct ContentView: View {
     @Namespace private var floatingButtonNamespace
 
     var body: some View {
+        GeometryReader { geometry in
+            content(landscapePhone: controlsBelowGuest
+                    && UIDevice.current.userInterfaceIdiom == .phone
+                    && geometry.size.width > geometry.size.height)
+        }
+        .ignoresSafeArea(.keyboard)
+    }
+
+    private func content(landscapePhone: Bool) -> some View {
         ZStack(alignment: .trailing) {
             ZStack {
                 GuestPictureInPictureAnchor()
@@ -116,10 +125,12 @@ struct ContentView: View {
             )
             if !controlsBelowGuest { floatingButtons }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if controlsBelowGuest { bottomControls }
+        .padding(.top, landscapePhone ? 24 : 0)
+        .padding(.bottom, controlsBelowGuest && !landscapePhone ? 60 : 0)
+        .padding(.trailing, landscapePhone ? 60 : 0)
+        .overlay(alignment: landscapePhone ? .trailing : .bottom) {
+            if controlsBelowGuest { touchControlsBar(vertical: landscapePhone) }
         }
-        .ignoresSafeArea(.keyboard)
         .overlay {
             // Over the guest and its controls: the guest is not running.
             if let pause = spacePause.pause {
@@ -209,23 +220,36 @@ struct ContentView: View {
         }
     }
 
-    private var bottomControls: some View {
-        GlassEffectContainer(spacing: FloatingControlMetrics.spacing) {
-            HStack(spacing: FloatingControlMetrics.spacing) {
-                settingsButton
-                if keepRunningChosen && launcher.phase == .running {
-                    keepRunningButton
-                }
-                displayModeButton
-                keyboardButton
-                ForEach([GuestSpecialKey.power, .volumeUp, .volumeDown]) { key in
-                    specialKeyButton(key)
-                }
+    private func touchControlsBar(vertical: Bool) -> some View {
+        // Keep one control container while rotating so focus and accessibility
+        // identity survive the change between a row and a column.
+        let layout = vertical
+            ? AnyLayout(VStackLayout(spacing: FloatingControlMetrics.spacing))
+            : AnyLayout(HStackLayout(spacing: FloatingControlMetrics.spacing))
+        return ScrollView(vertical ? .vertical : .horizontal) {
+            GlassEffectContainer(spacing: FloatingControlMetrics.spacing) {
+                layout { touchControls }
             }
+            .padding(8)
         }
-        .padding(8)
-        .frame(maxWidth: .infinity)
+        .defaultScrollAnchor(.center, for: .alignment)
+        .scrollIndicators(.hidden)
+        .frame(width: vertical ? 60 : nil, height: vertical ? nil : 60)
+        .frame(maxWidth: vertical ? nil : .infinity, maxHeight: vertical ? .infinity : nil)
         .background(.bar)
+    }
+
+    @ViewBuilder
+    private var touchControls: some View {
+        settingsButton
+        if keepRunningChosen && launcher.phase == .running {
+            keepRunningButton
+        }
+        displayModeButton
+        keyboardButton
+        ForEach([GuestSpecialKey.power, .volumeUp, .volumeDown]) { key in
+            specialKeyButton(key)
+        }
     }
 
     private var floatingButtonsContent: some View {

@@ -3,9 +3,11 @@
 Toucharium is an iOS host for the official UBports Ubuntu Touch arm64 PDK
 userspace. Its independent application target shares Kernarium's Linux runtime,
 GuestHost display and input, and guest settings. It runs on an Apple silicon
-Mac in Designed for iPad mode. Runtime validation uses the iPhone 17 Simulator.
+Mac in Designed for iPad mode. Runtime validation uses iPhone and iPad simulators.
 Lomiri startup and interaction remain under validation. Host controls sit below
-the guest display in one row so Ubuntu Touch retains its full edges for gestures.
+the guest display in one row on iPad and portrait iPhone. Landscape iPhone
+places them in a right-hand column and reserves space above the guest for its
+pull-down panel; the bottom retains only the system safe area.
 The host keyboard is toggled from the controls; touching the guest display
 dismisses it while forwarding the contact to Ubuntu Touch.
 Ubuntu's grid-unit and web-content density follow the guest's boot display
@@ -20,8 +22,9 @@ to Lomiri; iPhone mode suppresses the guest keyboard.
 Ubuntu Touch keyboard mode is the default when no keyboard preference has been saved.
 Existing selections are preserved. Emulator Settings also selects Phone mode
 or Desktop windows; the latter gives Ubuntu applications window title bars
-and controls. Save applies the choice on the next application launch, and
-Cancel preserves the previous choice. Desktop mode selects a desktop device profile
+and controls. iPad defaults to Desktop windows and iPhone defaults to Phone
+mode; existing selections are preserved. Save applies the choice on the next
+application launch, and Cancel preserves the previous choice. Desktop mode selects a desktop device profile
 without the phone portrait constraint and retains the selected mode on
 touch-only devices. Both modes use the same external image.
 
