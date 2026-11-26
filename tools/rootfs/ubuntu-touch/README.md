@@ -68,12 +68,12 @@ substitute for those sources.
 `sources.json` pins the official archive and raw disk. Running `package.py`
 without an input prints the official download URL and archive SHA-256, including
 on macOS. The user downloads that file in their browser. Packaging then verifies
-the archive and decompressed disk, builds the guest GPU compatibility library,
+the archive and decompressed disk, extracts the embedded ARM64 GPU compatibility library,
 and invokes the image producer. The script does not access the network or modify
 the supplied input. Verified decompressed inputs are cached for later runs.
 
-Run on Ubuntu 24.04 arm64 as root, with Python 3, a C++20 compiler,
-CMake 3.27 or newer, Ninja and erofs-utils installed:
+Run on ARM64 or x86-64 Linux as root, with Python 3, erofs-utils,
+and the system mount utilities installed:
 
 ```sh
 sudo python3 tools/rootfs/ubuntu-touch/package.py \
@@ -84,12 +84,11 @@ sudo python3 tools/rootfs/ubuntu-touch/package.py \
 
 The first run needs space for the official raw disk plus packaging scratch;
 macOS requires a Linux VM. A work directory admits one packaging process at a
-time. Existing outputs are refused. The optional `--gpu-compat` reuses a
-verified ARM64 compatibility artifact and allows both ARM64 and x86-64 Linux
-build hosts without compiling or executing guest code. A verified artifact
-under the work directory's `gpu-compat` is reused automatically, including on
-x86-64 and on newer ARM64 distributions. The produced guest remains ARM64 on
-either host architecture. `--disk`
+time. Existing outputs are refused. Both host architectures use the same
+embedded library, whose source identity, ARM64 ELF header and digest are
+verified before use. Packaging does not compile or execute guest code and
+does not require a C++ compiler, CMake or Ninja. The produced guest remains
+ARM64 on either host architecture. `--disk`
 accepts an already decompressed official input instead of an archive.
 `derive.py` remains the offline producer for already decompressed inputs.
 

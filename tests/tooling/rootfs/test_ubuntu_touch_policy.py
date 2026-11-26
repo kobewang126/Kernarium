@@ -9,7 +9,6 @@ import importlib.util
 import json
 import lzma
 import subprocess
-import shutil
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -69,8 +68,8 @@ def check_local_packaging(producer: Path, root: Path):
         assert not rejected.exists() and not list(root.glob('.raw-*'))
 
 
-def check_packaging_hosts(producer: Path, root: Path, artifact: Path):
-    root, artifact = root.resolve(), artifact.resolve()
+def check_packaging_hosts(producer: Path, root: Path):
+    root = root.resolve()
     package = load('package_hosts', producer / 'package.py')
     import derive
     source = root / 'package-source'
@@ -82,16 +81,12 @@ def check_packaging_hosts(producer: Path, root: Path, artifact: Path):
     pin['disk']['sha256'] = hashlib.sha256(raw.read_bytes()).hexdigest()
     (source / 'sources.json').write_text(json.dumps(pin))
     for architecture in ['aarch64', 'x86_64']:
-        for explicit in [True, False]:
-            work = root / f'package-{architecture}-{explicit}'
-            work.mkdir()
-            gpu = artifact if explicit else work / 'gpu-compat'
-            if not explicit:
-                shutil.copytree(artifact, gpu)
-            output = work / 'local.erofs'
+        work = root / f'package-{architecture}'
+        work.mkdir()
+        gpu = work / 'gpu-compat'
+        for iteration in [0, 1]:
+            output = work / f'local-{iteration}.erofs'
             arguments = ['package.py', '--disk', str(raw), '--work', str(work), '--output', str(output)]
-            if explicit:
-                arguments += ['--gpu-compat', str(gpu)]
 
             def produce():
                 assert sys.argv[sys.argv.index('--disk') + 1] == str(raw)
@@ -120,6 +115,32 @@ def check_packaging_hosts(producer: Path, root: Path, artifact: Path):
                 assert commands.call_count == 1
             assert raw.read_bytes() == b'verified offline input'
             assert output.exists() and output.with_suffix('.erofs.import.json').exists()
+        library = gpu / 'lib/libtoucharium-mir-gpu.so'
+        original = library.read_bytes()
+        assert hashlib.sha256(original).hexdigest() == package.EMBEDDED_GPU_RECEIPT['library_sha256']
+        assert int.from_bytes(original[18:20], 'little') == 183
+        library.write_bytes(original + b'tamper')
+        try:
+            package.stage_gpu(gpu)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('tampered prebuilt GPU cache accepted')
+        assert library.read_bytes() == original + b'tamper'
+        library.write_bytes(original)
+        subprocess.run([sys.executable, '-B', str(producer / 'gpu-compat/embed.py'),
+                        '--artifact', str(gpu), '--script', str(producer / 'package.py'), '--check'],
+                       check=True, timeout=10)
+    rejected = root / 'rejected-gpu'
+    bad = dict(package.EMBEDDED_GPU_RECEIPT, library_sha256='0' * 64)
+    with patch.object(package, 'EMBEDDED_GPU_RECEIPT', bad):
+        try:
+            package.stage_gpu(rejected)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('tampered embedded GPU payload accepted')
+    assert not rejected.exists()
 
 
 def main():
@@ -212,7 +233,7 @@ def main():
         else:
             raise AssertionError('tampered library accepted')
         lib.write_bytes(library)
-        check_packaging_hosts(args.producer, root, artifact)
+        check_packaging_hosts(args.producer, root)
         # The app's dynamic archive contains no fixed guest implementation.
         for shell_mode, usage in [('phone', 'Staged'), ('desktop', 'Windowed')]:
             dynamic = root / (shell_mode + '.cpio')
