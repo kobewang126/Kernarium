@@ -109,7 +109,7 @@ struct TouchariumImageView: View {
                 Text(error).foregroundStyle(.red).multilineTextAlignment(.center)
                     .accessibilityIdentifier("imageImportError")
             }
-            Text("Your existing Ubuntu Touch data is kept when you import a system image.")
+            Text("Your existing system data is kept when you import a system image.")
                 .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Text("File verification checks integrity, not the source or endorsement of an image.")
                 .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
