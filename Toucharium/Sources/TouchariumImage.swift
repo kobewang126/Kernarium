@@ -63,6 +63,7 @@ nonisolated enum TouchariumImage {
     struct Installation {
         let descriptor: TouchariumImageDescriptor
         let filename: String
+        let dataDirectory: String
     }
 
     private struct Receipt: Codable {
@@ -71,6 +72,44 @@ nonisolated enum TouchariumImage {
         let modified: Date
         let descriptor: TouchariumImageDescriptor?
         let storageFilename: String?
+        let dataDirectory: String?
+        var retiredDataDirectory: String?
+    }
+
+    private static func validDataDirectory(_ name: String) -> Bool {
+        name == "UbuntuTouch" || (name.hasPrefix("TouchariumData-")
+            && UUID(uuidString: String(name.dropFirst("TouchariumData-".count))) != nil)
+    }
+
+    static func removeRetiredData(in directory: URL) throws {
+        let url = receiptURL(in: directory)
+        guard let data = try? Data(contentsOf: url),
+              var receipt = try? JSONDecoder().decode(Receipt.self, from: data),
+              let retired = receipt.retiredDataDirectory else { return }
+        guard validDataDirectory(retired), let active = receipt.dataDirectory,
+              validDataDirectory(active), retired != active else {
+            throw TouchariumImageError.invalidDescriptor
+        }
+        let manager = FileManager.default
+        let old = directory.appendingPathComponent(retired, isDirectory: true)
+        if manager.fileExists(atPath: old.path) {
+            let values = try old.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard values.isDirectory == true, values.isSymbolicLink != true else {
+                throw TouchariumImageError.invalidDescriptor
+            }
+            if retired == "UbuntuTouch" {
+                // Legacy guest data shares its directory with the installation
+                // index. Keep that index while removing the old guest state.
+                for item in try manager.contentsOfDirectory(at: old, includingPropertiesForKeys: nil)
+                    where item.lastPathComponent != url.lastPathComponent {
+                    try manager.removeItem(at: item)
+                }
+            } else {
+                try manager.removeItem(at: old)
+            }
+        }
+        receipt.retiredDataDirectory = nil
+        try JSONEncoder().encode(receipt).write(to: url, options: .atomic)
     }
 
     static func receiptURL(in directory: URL) -> URL {
@@ -80,10 +119,20 @@ nonisolated enum TouchariumImage {
     static func removeInterruptedImports(in directory: URL) throws {
         let manager = FileManager.default
         guard manager.fileExists(atPath: directory.path) else { return }
+        try removeRetiredData(in: directory)
+        let receipt = receiptURL(in: directory)
+        let saved = (try? Data(contentsOf: receipt)).flatMap { try? JSONDecoder().decode(Receipt.self, from: $0) }
+        let canCleanGenerations = saved != nil || !manager.fileExists(atPath: receipt.path)
         for url in try manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isRegularFileKey]) {
             let prefix = ".toucharium-import-"
-            guard url.lastPathComponent.hasPrefix(prefix),
-                  UUID(uuidString: String(url.lastPathComponent.dropFirst(prefix.count))) != nil,
+            let name = url.lastPathComponent
+            let staging = name.hasPrefix(prefix)
+                && UUID(uuidString: String(name.dropFirst(prefix.count))) != nil
+            let generationPrefix = "TouchariumSystem-"
+            let unusedGeneration = canCleanGenerations && name != saved?.storageFilename
+                && name.hasPrefix(generationPrefix) && name.hasSuffix(".erofs")
+                && UUID(uuidString: String(name.dropFirst(generationPrefix.count).dropLast(6))) != nil
+            guard staging || unusedGeneration,
                   try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else { continue }
             try manager.removeItem(at: url)
         }
@@ -106,7 +155,9 @@ nonisolated enum TouchariumImage {
               receipt.sha256 == descriptor.sha256, receipt.size == descriptor.size,
               Int64(values.fileSize ?? 0) == descriptor.size,
               values.contentModificationDate == receipt.modified else { return nil }
-        return Installation(descriptor: descriptor, filename: filename)
+        let dataDirectory = receipt.dataDirectory ?? "UbuntuTouch"
+        guard validDataDirectory(dataDirectory) else { return nil }
+        return Installation(descriptor: descriptor, filename: filename, dataDirectory: dataDirectory)
     }
 
     static func isInstalled(_ descriptor: TouchariumImageDescriptor, in directory: URL) -> Bool {
@@ -117,6 +168,8 @@ nonisolated enum TouchariumImage {
     /// A failed, cancelled or mismatched import never publishes the staging file.
     static func install(
         from source: URL, descriptor: TouchariumImageDescriptor, into directory: URL,
+        previousFilename: String? = nil,
+        preserveData: Bool = true,
         progress: @Sendable (Double) -> Void = { _ in }
     ) throws -> URL {
         let descriptor = try descriptor.validated()
@@ -129,6 +182,7 @@ nonisolated enum TouchariumImage {
         }
         let manager = FileManager.default
         try manager.createDirectory(at: directory, withIntermediateDirectories: true)
+        try removeRetiredData(in: directory)
         let space = try manager.attributesOfFileSystem(forPath: directory.path)
         if let free = space[.systemFreeSize] as? NSNumber,
            free.int64Value < descriptor.size + (128 << 20) {
@@ -166,16 +220,24 @@ nonisolated enum TouchariumImage {
         try Task.checkCancellation()
         try output.synchronize()
         try output.close()
-        let destination = directory.appendingPathComponent(installedFilename)
-        if manager.fileExists(atPath: destination.path) {
-            let existing = try destination.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
-            guard existing.isRegularFile == true, existing.isSymbolicLink != true else {
-                throw TouchariumImageError.unsupportedImage
+        let previous = installation(in: directory, legacyFilename: previousFilename)
+        let dataDirectory = preserveData ? (previous?.dataDirectory ?? "UbuntuTouch")
+            : "TouchariumData-\(UUID().uuidString)"
+        let freshData = preserveData ? nil : directory.appendingPathComponent(dataDirectory, isDirectory: true)
+        let initial = directory.appendingPathComponent(installedFilename)
+        let destination = previous != nil || manager.fileExists(atPath: initial.path)
+            ? directory.appendingPathComponent("TouchariumSystem-\(UUID().uuidString).erofs") : initial
+        // The receipt is the commit point. A new immutable file keeps the old
+        // image usable even if publishing the receipt fails or is interrupted.
+        var committed = false
+        defer {
+            if !committed {
+                try? manager.removeItem(at: destination)
+                if let freshData { try? manager.removeItem(at: freshData) }
             }
-            _ = try manager.replaceItemAt(destination, withItemAt: staging)
-        } else {
-            try manager.moveItem(at: staging, to: destination)
         }
+        if let freshData { try manager.createDirectory(at: freshData, withIntermediateDirectories: false) }
+        try manager.moveItem(at: staging, to: destination)
         var image = destination
         var resource = URLResourceValues()
         resource.isExcludedFromBackup = true
@@ -183,10 +245,20 @@ nonisolated enum TouchariumImage {
         let installed = try image.resourceValues(forKeys: [.contentModificationDateKey])
         guard let modified = installed.contentModificationDate else { throw CocoaError(.fileReadUnknown) }
         let receipt = Receipt(sha256: checksum, size: total, modified: modified,
-                              descriptor: descriptor, storageFilename: installedFilename)
+                              descriptor: descriptor, storageFilename: destination.lastPathComponent,
+                              dataDirectory: dataDirectory,
+                              retiredDataDirectory: preserveData ? nil : (previous?.dataDirectory ?? "UbuntuTouch"))
         let url = receiptURL(in: directory)
         try manager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Task.checkCancellation()
         try JSONEncoder().encode(receipt).write(to: url, options: .atomic)
+        committed = true
+        // The persisted marker makes deletion retryable after interruption;
+        // startup completes it before allowing the new guest to run.
+        try? removeRetiredData(in: directory)
+        if let previous, previous.filename != destination.lastPathComponent {
+            try? manager.removeItem(at: directory.appendingPathComponent(previous.filename))
+        }
         return destination
     }
 }

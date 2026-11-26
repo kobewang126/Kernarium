@@ -20,6 +20,8 @@ struct EmulatorSettingsView: View {
     private let defaults: UserDefaults
     private let rootfsFilenames: [String]
     private let documentsDirectory: URL
+    private let changeSystemImage: (() -> Void)?
+    @State private var confirmingImageChange = false
 
     /// The most guest RAM the memory limit leaves at the chosen vCPU count.
     private var maximumGuestMemoryMiB: Int {
@@ -41,9 +43,11 @@ struct EmulatorSettingsView: View {
         documentsDirectory: URL = RootfsImage.documentsDirectory,
         keyboardSource: Binding<String>? = nil,
         supportedRootfsNames: [String]? = nil,
-        shellMode: Binding<String>? = nil
+        shellMode: Binding<String>? = nil,
+        changeSystemImage: (() -> Void)? = nil
     ) {
         self.keyboardSource = keyboardSource
+        self.changeSystemImage = changeSystemImage
         _selectedKeyboardSource = State(initialValue: keyboardSource?.wrappedValue ?? "ios")
         self.shellMode = shellMode
         _selectedShellMode = State(initialValue: shellMode?.wrappedValue ?? "phone")
@@ -219,6 +223,10 @@ struct EmulatorSettingsView: View {
                 }
 
                 Section("Storage") {
+                    if changeSystemImage != nil {
+                        Button("Change system image…") { confirmingImageChange = true }
+                            .accessibilityIdentifier("changeSystemImageButton")
+                    }
                     Picker(
                         "Root filesystem",
                         selection: $configuration.rootfsFilename
@@ -309,6 +317,16 @@ struct EmulatorSettingsView: View {
             }
             .navigationTitle("Emulator settings")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Change system image?", isPresented: $confirmingImageChange) {
+                Button("Cancel", role: .cancel) {}
+                Button("Stop and continue") {
+                    changeSystemImage?()
+                    dismiss()
+                }
+                .accessibilityIdentifier("confirmImageChangeButton")
+            } message: {
+                Text("This stops the current system. You can keep existing data or start fresh with the new image. Close and reopen Toucharium afterwards to start the system.")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

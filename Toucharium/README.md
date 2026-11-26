@@ -59,8 +59,19 @@ only after verification. No bundled digest pins imports to a particular build.
 This check establishes file integrity, not image provenance or endorsement.
 Cancellation or a checksum mismatch discards the staging file. The installed
 image is excluded from device backups; the writable guest
-data remains in Documents/UbuntuTouch and survives application updates.
+data remains in Documents and survives application updates.
 Existing verified installations remain usable after upgrading.
+Emulator Settings can change the system image. It stops the guest before import.
+Keeping the writable data is the default and requires a compatible replacement
+image. Start fresh selects an empty data environment and deletes the previous
+data only after the new image is published. A persisted deletion marker lets
+startup finish interrupted cleanup before the new guest runs; no data backup
+is retained.
+A replacement is published through an atomic installation receipt only after
+verification; a failed or cancelled import leaves the previous image selected.
+The application must be closed and reopened after changing the image or keeping
+the previous one, because each process runs one guest. An interrupted change can
+be continued at the next launch before a guest starts.
 Images whose installation receipt no longer matches their file metadata must
 be imported and verified again. CPU, display and keyboard preferences are preserved.
 The generic Linux runtime starts the image's own systemd and LightDM session;
@@ -95,8 +106,8 @@ The command-line team setting also signs the Swift Package resource bundle.
 
 Simulator builds use the separately packaged software-rendering slices;
 Designed for iPad uses the device slices and their Metal graphics stack.
-Ubuntu Touch keeps its writable overlay in Documents/UbuntuTouch. Cover
-installations preserve it. The image carries the portrait phone policy, input
+The installation receipt selects the writable overlay directory in Documents.
+Cover installations preserve it. The image carries the portrait phone policy, input
 mapping, locale initialization, native Mir GPU compatibility library and
 application access policy. The application supplies the keyboard and interface selections,
 display-density override and a small migration bootstrap through CPIO.

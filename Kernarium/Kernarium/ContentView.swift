@@ -12,13 +12,16 @@ struct ContentView: View {
     var keyboardSource: Binding<String>?
     var shellMode: Binding<String>?
     let supportedRootfsNames: [String]?
+    let changeSystemImage: (() -> Void)?
 
     init(controlsBelowGuest: Bool = false, keyboardSource: Binding<String>? = nil,
-         supportedRootfsNames: [String]? = nil, shellMode: Binding<String>? = nil) {
+         supportedRootfsNames: [String]? = nil, shellMode: Binding<String>? = nil,
+         changeSystemImage: (() -> Void)? = nil) {
         self.controlsBelowGuest = controlsBelowGuest
         self.keyboardSource = keyboardSource
         self.shellMode = shellMode
         self.supportedRootfsNames = supportedRootfsNames
+        self.changeSystemImage = changeSystemImage
     }
 
     @StateObject private var serialConsole = SerialConsoleController()
@@ -35,6 +38,7 @@ struct ContentView: View {
     @State private var framebufferKeyboardVisible = false
     @State private var specialKeysExpanded = false
     @State private var settingsPresented = false
+    @State private var imageChangeRequested = false
     /// Whether the window scene fills the screen. Until the view is in a
     /// scene, it is taken to be a window, which is the system's own default.
     @State private var sceneCoversScreen = false
@@ -148,9 +152,17 @@ struct ContentView: View {
         .background {
             SceneCoverageReader { sceneCoversScreen = $0 }
         }
-        .sheet(isPresented: $settingsPresented) {
+        .sheet(isPresented: $settingsPresented, onDismiss: {
+            if imageChangeRequested {
+                imageChangeRequested = false
+                changeSystemImage?()
+            }
+        }) {
             EmulatorSettingsView(keyboardSource: keyboardSource,
-                                 supportedRootfsNames: supportedRootfsNames, shellMode: shellMode)
+                                 supportedRootfsNames: supportedRootfsNames, shellMode: shellMode,
+                                 changeSystemImage: changeSystemImage.map { _ in
+                                     { imageChangeRequested = true }
+                                 })
         }
         .onChange(of: keyboardSource?.wrappedValue) {
             framebufferKeyboardVisible = false

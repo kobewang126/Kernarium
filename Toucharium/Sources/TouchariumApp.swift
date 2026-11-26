@@ -47,7 +47,7 @@ struct TouchariumApp: App {
         // The singleton snapshots preferences and queries the runtime.
         // Initialize it only after selecting the image and host GL driver.
         EmulatorLauncher.shared.persistentOverlayDirectory = documents
-            .appendingPathComponent("UbuntuTouch", isDirectory: true)
+            .appendingPathComponent(installed?.dataDirectory ?? "UbuntuTouch", isDirectory: true)
         EmulatorLauncher.shared.linuxAppArmor = true
         let prefix = preferences.string(forKey: "toucharium.shellMode") == "desktop"
             ? "TouchariumDesktop" : "Toucharium"
@@ -92,9 +92,28 @@ private struct TouchariumRootView: View {
     @StateObject private var image = TouchariumImageStore()
 
     var body: some View {
-        if image.ready {
+        if image.needsRelaunch {
+            ContentUnavailableView("Reopen Toucharium", systemImage: "arrow.clockwise",
+                description: Text("Close Toucharium from the app switcher, then open it again to start the selected system image."))
+                .accessibilityIdentifier("imageChangeRelaunchNotice")
+        } else if image.ready && !image.replacing {
             ContentView(controlsBelowGuest: true, keyboardSource: $keyboardSource,
-                        supportedRootfsNames: [image.filename], shellMode: $shellMode)
+                        supportedRootfsNames: [image.filename], shellMode: $shellMode,
+                        changeSystemImage: {
+                Task {
+                    await image.beginReplacement {
+                        let launcher = EmulatorLauncher.shared
+                        launcher.stop()
+                        let clock = ContinuousClock()
+                        let deadline = clock.now.advanced(by: .seconds(45))
+                        while launcher.phase == .running && clock.now < deadline {
+                            do { try await Task.sleep(for: .milliseconds(200)) }
+                            catch { return false }
+                        }
+                        return launcher.phase != .running
+                    }
+                }
+            })
         } else {
             TouchariumImageView(store: image)
         }

@@ -157,6 +157,54 @@ final class UbuntuTouchInteractionTests: XCTestCase {
         XCTAssertTrue(app.buttons["importSystemImageButton"].exists)
     }
     @MainActor
+    func testSystemImageReplacementEntryAndCancellation() throws {
+        guard ProcessInfo.processInfo.environment["TOUCHARIUM_IMAGE_CHANGE_TEST"] == "1" else {
+            throw XCTSkip("requires an imported image on a dedicated simulator")
+        }
+        let app = XCUIApplication(bundleIdentifier:
+            ProcessInfo.processInfo.environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
+        app.launchEnvironment["KERNARIUM_VCPU_COUNT"] = "4"
+        app.launchEnvironment["KERNARIUM_GUEST_MEMORY_MIB"] = "2048"
+        app.launch()
+        XCTAssertTrue(app.buttons["settingsButton"].waitForExistence(timeout: 15))
+        app.buttons["settingsButton"].tap()
+        let change = app.buttons["changeSystemImageButton"]
+        let form = app.collectionViews.firstMatch
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
+        for _ in 0..<8 {
+            if change.exists && change.isHittable { break }
+            form.swipeUp()
+        }
+        XCTAssertTrue(change.isHittable)
+        change.tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5))
+        app.alerts.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["settingsSaveButton"].exists)
+        change.tap()
+        app.alerts.firstMatch.buttons["Stop and continue"].firstMatch.tap()
+        let importButton = app.buttons["importSystemImageButton"]
+        XCTAssertTrue(importButton.waitForExistence(timeout: 60))
+        XCTAssertTrue(importButton.isEnabled)
+        XCTAssertFalse(app.descendants(matching: .any)["framebufferView"].exists)
+        let policy = app.buttons["imageDataPolicyPicker"]
+        XCTAssertTrue(policy.exists)
+        XCTAssertTrue((policy.label + String(describing: policy.value)).contains("Keep existing data"))
+        policy.tap()
+        app.buttons["Start fresh"].firstMatch.tap()
+        policy.tap()
+        app.buttons["Keep existing data"].firstMatch.tap()
+        importButton.tap()
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 10))
+        app.buttons["Cancel"].tap()
+        app.buttons["keepCurrentImageButton"].tap()
+        XCTAssertTrue(app.staticTexts["Reopen Toucharium"].waitForExistence(timeout: 5))
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["settingsButton"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["importSystemImageButton"].exists)
+    }
+
+    @MainActor
     private func selectKeyboard(_ name: String, in app: XCUIApplication, save: Bool = true) {
         app.buttons["settingsButton"].tap()
         let source = app.buttons["keyboardSourcePicker"]

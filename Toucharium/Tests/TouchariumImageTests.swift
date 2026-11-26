@@ -34,7 +34,7 @@ struct TouchariumImageTests {
             try imageData(fill).write(to: source)
             let destination = try TouchariumImage.install(from: source, descriptor: descriptor,
                 into: directory.appendingPathComponent("Documents"))
-            #expect(destination.lastPathComponent == TouchariumImage.installedFilename)
+            #expect(TouchariumImageDescriptor.validFilename(destination.lastPathComponent))
             #expect(TouchariumImage.installation(in: destination.deletingLastPathComponent())?.descriptor == descriptor)
         }
         for filename in ["../outside.erofs", "/outside.erofs", "nested/file.erofs", "bad\\file.erofs", ".hidden.erofs"] {
@@ -48,6 +48,137 @@ struct TouchariumImageTests {
         #expect(throws: TouchariumImageError.self) { try invalid.validated() }
         try Data(repeating: 32, count: 65537).write(to: file)
         #expect(throws: TouchariumImageError.self) { try TouchariumImageDescriptor.load(from: file) }
+    }
+
+    @Test func receiptPublicationFailureKeepsPreviousImageAndData() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("local.erofs")
+        let documents = directory.appendingPathComponent("Documents")
+        try imageData(3).write(to: source)
+        let original = describe(imageData(3))
+        let installed = try TouchariumImage.install(from: source, descriptor: original, into: documents)
+        let receipt = TouchariumImage.receiptURL(in: documents)
+        let oldReceipt = try Data(contentsOf: receipt)
+        let overlay = receipt.deletingLastPathComponent().appendingPathComponent("overlay.ext4")
+        try Data("guest data".utf8).write(to: overlay)
+        try imageData(4).write(to: source)
+        let replacement = describe(imageData(4))
+        // Make receipt publication fail after copying: an atomic write cannot
+        // replace a directory, while the old image remains untouched.
+        try FileManager.default.removeItem(at: receipt)
+        try FileManager.default.createDirectory(at: receipt, withIntermediateDirectories: true)
+        #expect(throws: (any Error).self) {
+            try TouchariumImage.install(from: source, descriptor: replacement, into: documents)
+        }
+        #expect(try Data(contentsOf: installed) == imageData(3))
+        #expect(try Data(contentsOf: overlay) == Data("guest data".utf8))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: documents.path).sorted() ==
+            [TouchariumImage.installedFilename, "UbuntuTouch"].sorted())
+        try FileManager.default.removeItem(at: receipt)
+        try oldReceipt.write(to: receipt)
+        #expect(TouchariumImage.isInstalled(original, in: documents))
+        let destination = try TouchariumImage.install(from: source, descriptor: replacement, into: documents)
+        #expect(destination != installed)
+        #expect(!FileManager.default.fileExists(atPath: installed.path))
+        #expect(TouchariumImage.installation(in: documents)?.descriptor == replacement)
+        #expect(try Data(contentsOf: overlay) == Data("guest data".utf8))
+        let orphan = documents.appendingPathComponent("TouchariumSystem-\(UUID().uuidString).erofs")
+        try Data([1]).write(to: orphan)
+        try TouchariumImage.removeInterruptedImports(in: documents)
+        #expect(!FileManager.default.fileExists(atPath: orphan.path))
+        #expect(FileManager.default.fileExists(atPath: destination.path))
+        #expect(TouchariumImage.installation(in: documents)?.descriptor == replacement)
+    }
+
+    @Test func freshDataDeletesPreviousDataOnlyAfterSuccessfulPublication() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("local.erofs")
+        let documents = directory.appendingPathComponent("Documents")
+        let original = describe(imageData(1))
+        try imageData(1).write(to: source)
+        _ = try TouchariumImage.install(from: source, descriptor: original, into: documents)
+        let oldData = documents.appendingPathComponent("UbuntuTouch")
+        let marker = oldData.appendingPathComponent("user-data")
+        try Data("important".utf8).write(to: marker)
+        let wrong = describe(imageData(2))
+        #expect(throws: TouchariumImageError.self) {
+            try TouchariumImage.install(from: source, descriptor: wrong, into: documents, preserveData: false)
+        }
+        #expect(try Data(contentsOf: marker) == Data("important".utf8))
+        _ = try TouchariumImage.install(from: source, descriptor: original, into: documents, preserveData: false)
+        let fresh = try #require(TouchariumImage.installation(in: documents))
+        #expect(fresh.dataDirectory != "UbuntuTouch")
+        #expect(!FileManager.default.fileExists(atPath: marker.path))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: oldData.path) == ["imported-image.json"])
+        let freshDirectory = documents.appendingPathComponent(fresh.dataDirectory)
+        let newMarker = freshDirectory.appendingPathComponent("new-data")
+        try Data("new data".utf8).write(to: newMarker)
+        _ = try TouchariumImage.install(from: source, descriptor: original, into: documents)
+        #expect(TouchariumImage.installation(in: documents)?.dataDirectory == fresh.dataDirectory)
+        #expect(try Data(contentsOf: newMarker) == Data("new data".utf8))
+        // Simulate an interrupted deletion and verify that startup finishes it.
+        var receipt = try #require(JSONSerialization.jsonObject(with: Data(contentsOf:
+            TouchariumImage.receiptURL(in: documents))) as? [String: Any])
+        let nextDataName = "TouchariumData-\(UUID().uuidString)"
+        try FileManager.default.createDirectory(at: documents.appendingPathComponent(nextDataName),
+                                               withIntermediateDirectories: false)
+        receipt["dataDirectory"] = nextDataName
+        receipt["retiredDataDirectory"] = fresh.dataDirectory
+        try JSONSerialization.data(withJSONObject: receipt).write(to: TouchariumImage.receiptURL(in: documents))
+        try TouchariumImage.removeInterruptedImports(in: documents)
+        #expect(!FileManager.default.fileExists(atPath: freshDirectory.path))
+        #expect(TouchariumImage.installation(in: documents)?.dataDirectory == nextDataName)
+    }
+
+    @Test @MainActor func replacementRequiresStoppedGuestAndSurvivesRelaunch() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suite = "TouchariumImageTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let source = directory.appendingPathComponent("local.erofs")
+        let data = imageData(5)
+        try data.write(to: source)
+        _ = try TouchariumImage.install(from: source, descriptor: describe(data), into: directory)
+        let description = directory.appendingPathComponent("local.erofs.import.json")
+        try JSONEncoder().encode(describe(data)).write(to: description)
+        let store = TouchariumImageStore(directory: directory, defaults: defaults)
+        #expect(store.ready)
+        await store.beginReplacement {
+            #expect(store.stopping)
+            #expect(store.replacing)
+            store.importImages([source, description])
+            #expect(store.progress == nil)
+            return false
+        }
+        #expect(store.stopFailed)
+        store.importImages([source, description])
+        #expect(store.progress == nil)
+        let reopened = TouchariumImageStore(directory: directory, defaults: defaults)
+        #expect(reopened.replacing && !reopened.stopping && !reopened.stopFailed)
+        reopened.keepCurrentImage()
+        #expect(reopened.needsRelaunch)
+        #expect(TouchariumImageStore(directory: directory, defaults: defaults).ready)
+        #expect(!TouchariumImageStore(directory: directory, defaults: defaults).replacing)
+        let retry = TouchariumImageStore(directory: directory, defaults: defaults)
+        await retry.beginReplacement { true }
+        retry.importImages([source, description])
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while retry.progress != nil && clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(retry.progress == nil)
+        #expect(retry.error == nil)
+        #expect(retry.needsRelaunch && !retry.replacing)
+        let nextLaunch = TouchariumImageStore(directory: directory, defaults: defaults)
+        #expect(nextLaunch.ready && !nextLaunch.replacing && !nextLaunch.needsRelaunch)
+        #expect(nextLaunch.filename == retry.filename)
     }
 
     @Test func legacyReceiptPreservesExistingInstallation() throws {
