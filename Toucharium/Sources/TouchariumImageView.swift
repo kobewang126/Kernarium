@@ -9,7 +9,8 @@ final class TouchariumImageStore: ObservableObject {
     @Published private(set) var ready = false
     @Published private(set) var progress: Double?
     @Published var error: String?
-    let descriptor: TouchariumImageDescriptor?
+    @Published private(set) var descriptor: TouchariumImageDescriptor?
+    private(set) var filename = TouchariumImage.installedFilename
     private let directory: URL
     private var operation: Task<URL, Error>?
     private var importID: UUID?
@@ -18,17 +19,33 @@ final class TouchariumImageStore: ObservableObject {
         self.directory = directory
         do {
             try TouchariumImage.removeInterruptedImports(in: directory)
-            let descriptor = try TouchariumImageDescriptor.load()
-            self.descriptor = descriptor
-            ready = TouchariumImage.isInstalled(descriptor, in: directory)
+            if let installed = TouchariumImage.installation(in: directory,
+                legacyFilename: UserDefaults.standard.string(forKey: "emulator.rootfsFilename")) {
+                descriptor = installed.descriptor
+                filename = installed.filename
+                ready = true
+            }
         } catch {
-            descriptor = nil
             self.error = error.localizedDescription
         }
     }
 
-    func importImage(_ url: URL) {
-        guard operation == nil, let descriptor else { return }
+    func importImages(_ urls: [URL]) {
+        guard operation == nil else { return }
+        let images = urls.filter { $0.pathExtension.lowercased() == "erofs" }
+        let descriptions = urls.filter { $0.lastPathComponent.lowercased().hasSuffix(".import.json") }
+        guard urls.count == 2, let url = images.first, images.count == 1,
+              let description = descriptions.first, descriptions.count == 1 else {
+            error = TouchariumImageError.invalidSelection.localizedDescription
+            return
+        }
+        let descriptor: TouchariumImageDescriptor
+        do {
+            descriptor = try TouchariumImageDescriptor.load(from: description)
+        } catch {
+            self.error = error.localizedDescription
+            return
+        }
         error = nil
         progress = 0
         let identifier = UUID()
@@ -46,6 +63,8 @@ final class TouchariumImageStore: ObservableObject {
         Task {
             do {
                 _ = try await task.value
+                self.descriptor = descriptor
+                filename = TouchariumImage.installedFilename
                 ready = true
             } catch is CancellationError {
                 error = nil
@@ -72,7 +91,7 @@ struct TouchariumImageView: View {
                 .foregroundStyle(.tint)
             Text("Choose your system image")
                 .font(.title2.bold())
-            Text("Toucharium runs a separate Ubuntu Touch system image. Import the supported image to get started.")
+            Text("Select a system image (.erofs) and its matching import file (.import.json) together.")
                 .multilineTextAlignment(.center)
             if let descriptor = store.descriptor {
                 Text(descriptor.filename).font(.footnote).foregroundStyle(.secondary)
@@ -84,7 +103,6 @@ struct TouchariumImageView: View {
             } else {
                 Button("Import system image") { choosingFile = true }
                     .buttonStyle(.borderedProminent)
-                    .disabled(store.descriptor == nil)
                     .accessibilityIdentifier("importSystemImageButton")
             }
             if let error = store.error {
@@ -93,13 +111,15 @@ struct TouchariumImageView: View {
             }
             Text("Your existing Ubuntu Touch data is kept when you import a system image.")
                 .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text("File verification checks integrity, not the source or endorsement of an image.")
+                .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .padding(32)
         .frame(maxWidth: 540)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.item]) { result in
+        .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
             switch result {
-            case let .success(url): store.importImage(url)
+            case let .success(urls): store.importImages(urls)
             case let .failure(error): store.error = error.localizedDescription
             }
         }

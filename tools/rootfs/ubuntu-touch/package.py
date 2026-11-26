@@ -234,9 +234,7 @@ def main() -> None:
         print('Image: ' + str(output), flush=True)
         print('Producer receipt: ' + str(receipt), flush=True)
         print('Import descriptor: ' + str(catalog), flush=True)
-        print('The current app accepts its bundled descriptor only. A locally generated image is not'
-              ' automatically accepted; it needs matching app import support or an app build using'
-              ' this import descriptor.', flush=True)
+        print('Select the .erofs image and its .import.json file together in Toucharium.', flush=True)
 
 
 if __name__ == '__main__':

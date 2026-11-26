@@ -52,11 +52,15 @@ and its input digests alone do not supply all guest package sources.
 The application imports the versioned image produced by
 [`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md).
 The application bundle contains no root filesystem. On first launch a file
-picker imports the supported EROFS image into Documents, verifies its complete
-size and SHA-256 against `Sources/TouchariumImage.json`, and publishes it only
-after verification. Cancellation or a checksum mismatch discards the staging
-file. The installed image is excluded from device backups; the writable guest
+picker imports a user-selected EROFS image and matching `.import.json` descriptor
+from the packaging tool. It checks the supported policy version and image format,
+verifies the complete size and SHA-256, and publishes the image in Documents
+only after verification. No bundled digest pins imports to a particular build.
+This check establishes file integrity, not image provenance or endorsement.
+Cancellation or a checksum mismatch discards the staging file. The installed
+image is excluded from device backups; the writable guest
 data remains in Documents/UbuntuTouch and survives application updates.
+Existing verified installations remain usable after upgrading.
 Images whose installation receipt no longer matches their file metadata must
 be imported and verified again. CPU, display and keyboard preferences are preserved.
 The generic Linux runtime starts the image's own systemd and LightDM session;
@@ -81,8 +85,8 @@ xcodebuild build \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-The image producer accepts a verified image receipt into the application's
-import descriptor before building. `TOUCHARIUM_BUNDLED_IMAGE` is rejected.
+The image producer generates the external import descriptor alongside the image.
+Neither file is bundled with the application. `TOUCHARIUM_BUNDLED_IMAGE` is rejected.
 The opt-in interaction probes under `UITests` operate on the already booted
 guest. Screenshots and guest response determine whether an interaction works;
 completing a synthetic tap alone does not prove it.
@@ -109,8 +113,9 @@ CMake-built `uml-initramfs` host tool. Image policy ownership, receipts and
 migration contracts are in
 [`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md).
 
-For a local Mac test, the hosted harness can import the pinned image from a
-loopback HTTP server with `TEST_RUNNER_TOUCHARIUM_IMAGE_URL` set to its URL.
+For a local Mac test, the hosted harness can import an image from a
+loopback HTTP server with `TEST_RUNNER_TOUCHARIUM_IMAGE_URL` set to its URL
+and `TEST_RUNNER_TOUCHARIUM_IMAGE_DESCRIPTOR_URL` set to the descriptor URL.
 It checks the image digest before publishing it in Documents, then ends the
 import run. Relaunch without that variable to boot. This avoids granting the
 application access to the source checkout or writing into its protected

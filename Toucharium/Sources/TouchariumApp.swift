@@ -18,11 +18,10 @@ struct TouchariumApp: App {
             preferences.set(true, forKey: "emulator.autoResizeGuest")
             preferences.set(2, forKey: "toucharium.phoneDisplayPolicyVersion")
         }
-        if let image = try? TouchariumImageDescriptor.load() {
-            // The launcher snapshots its configuration before import. Every
-            // accepted image is published under this stable, validated name.
-            preferences.set(image.filename, forKey: "emulator.rootfsFilename")
-        }
+        let installed = TouchariumImage.installation(in: documents,
+            legacyFilename: preferences.string(forKey: "emulator.rootfsFilename"))
+        preferences.set(installed?.filename ?? TouchariumImage.installedFilename,
+                        forKey: "emulator.rootfsFilename")
         // Before any view: the display and the terminal compile Metal
         // pipelines as they are created, and that reads the shader cache.
         MetalShaderCache.removeIfBloatedBeforeFirstUse()
@@ -95,7 +94,7 @@ private struct TouchariumRootView: View {
     var body: some View {
         if image.ready {
             ContentView(controlsBelowGuest: true, keyboardSource: $keyboardSource,
-                        supportedRootfsNames: image.descriptor.map { [$0.filename] }, shellMode: $shellMode)
+                        supportedRootfsNames: [image.filename], shellMode: $shellMode)
         } else {
             TouchariumImageView(store: image)
         }

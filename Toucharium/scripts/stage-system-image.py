@@ -4,7 +4,8 @@
 import os
 from pathlib import Path
 
-output = Path(os.environ['TARGET_BUILD_DIR']) / os.environ['UNLOCALIZED_RESOURCES_FOLDER_PATH'] / 'UbuntuTouch.erofs'
-output.unlink(missing_ok=True)
+resources = Path(os.environ['TARGET_BUILD_DIR']) / os.environ['UNLOCALIZED_RESOURCES_FOLDER_PATH']
+for name in ('UbuntuTouch.erofs', 'TouchariumImage.json'):
+    (resources / name).unlink(missing_ok=True)
 if os.environ.get('TOUCHARIUM_BUNDLED_IMAGE'):
     raise SystemExit('Toucharium 2 uses imported images; remove TOUCHARIUM_BUNDLED_IMAGE')

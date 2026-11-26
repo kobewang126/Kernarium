@@ -28,7 +28,15 @@ struct TouchariumRunTests {
             let image = temporary.appendingPathExtension("erofs")
             try FileManager.default.moveItem(at: temporary, to: image)
             defer { try? FileManager.default.removeItem(at: image) }
-            let descriptor = try TouchariumImageDescriptor.load()
+            let descriptionSource = try #require(
+                ProcessInfo.processInfo.environment["TOUCHARIUM_IMAGE_DESCRIPTOR_URL"])
+            let descriptionURL = try #require(URL(string: descriptionSource))
+            let (descriptionData, descriptionResponse) = try await session.data(from: descriptionURL)
+            try #require((descriptionResponse as? HTTPURLResponse)?.statusCode == 200)
+            let descriptionFile = temporary.appendingPathExtension("import.json")
+            try descriptionData.write(to: descriptionFile)
+            defer { try? FileManager.default.removeItem(at: descriptionFile) }
+            let descriptor = try TouchariumImageDescriptor.load(from: descriptionFile)
             let destination = try TouchariumImage.install(
                 from: image, descriptor: descriptor, into: documents
             )

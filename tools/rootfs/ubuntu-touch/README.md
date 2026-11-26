@@ -93,10 +93,10 @@ accepts an already decompressed official input instead of an archive.
 `derive.py` remains the offline producer for already decompressed inputs.
 
 The output is the EROFS image, its producer receipt and an adjacent
-`.erofs.import.json` application descriptor. The current application accepts
-only its bundled descriptor: locally generated images require matching import
-support or an application build accepting that generated descriptor. Local
-repacking alone does not make an image accepted by an existing application.
+`.erofs.import.json` application descriptor. Select the image and this descriptor
+together in the application to import a locally generated build. Import checks
+the supported policy version, image format, full size and SHA-256; it does not
+authenticate the image producer.
 
 `accept-image.py` verifies the completed image and current producer receipt
 before generating the application's import descriptor:
@@ -105,7 +105,7 @@ before generating the application's import descriptor:
 python3 tools/rootfs/ubuntu-touch/accept-image.py \
   --image /path/to/ubuntu-touch-pdk-470-v2-r3.erofs \
   --receipt /path/to/ubuntu-touch-pdk-470-v2-r3.erofs.json \
-  --catalog Toucharium/Sources/TouchariumImage.json
+  --catalog /path/to/ubuntu-touch-pdk-470-v2-r3.erofs.import.json
 ```
 
 The input remains read-only. The producer verifies its size and digest, applies
