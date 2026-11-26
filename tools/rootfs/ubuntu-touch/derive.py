@@ -18,6 +18,7 @@ import subprocess
 import tempfile
 
 from setup import apply
+from image_policy import install as install_image_policy
 
 DIRECTORY = Path(__file__).resolve().parent
 
@@ -28,6 +29,15 @@ def digest(path: Path) -> str:
         for block in iter(lambda: handle.read(8 << 20), b""):
             checksum.update(block)
     return checksum.hexdigest()
+
+
+def source_inputs() -> dict[str, str]:
+    names = ('derive.py', 'setup.py', 'image_policy.py', 'keyboard.py', 'display_policy.py',
+             'configure-input.py', 'configure-gpu.py', 'configure-locale.py', 'migrate-image.py',
+             'legacy-policy.json', 'legacy-wayland.json', 'lomiri-grid-unit.qml.in', 'sources.json',
+             'gpu-compat/artifact.py', 'gpu-compat/build.py', 'gpu-compat/gpu_compat.cpp',
+             'gpu-compat/CMakeLists.txt')
+    return {name: digest(DIRECTORY / name) for name in names}
 
 
 def run(arguments: list[str], timeout: int = 90) -> subprocess.CompletedProcess:
@@ -42,6 +52,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--work-root", type=Path, required=True,
                         help="Linux filesystem supporting overlayfs")
+    parser.add_argument("--gpu-compat", type=Path, required=True,
+                        help="verified arm64 guest GPU compatibility artifact")
     options = parser.parse_args()
     if os.geteuid() != 0 or os.uname().sysname != "Linux":
         parser.error("this derivation requires root on Linux")
@@ -78,6 +90,7 @@ def main() -> None:
              f"lowerdir={lower},upperdir={upper},workdir={overlay_work}", str(merged)])
         mounted_overlay = True
         apply(merged)
+        install_image_policy(merged, options.gpu_compat)
         # Older erofs-utils fixes the block size at 4 KiB and has no -b flag.
         # Check the produced superblock before accepting either tool version.
         run(["mkfs.erofs", "--quiet", "-zlz4hc,9", str(stage), str(merged)],
@@ -95,6 +108,9 @@ def main() -> None:
             "setup_sha256": digest(DIRECTORY / "setup.py"),
             "input_policy_sha256": digest(DIRECTORY / "configure-input.py"),
             "producer_sha256": digest(Path(__file__)),
+            "policy_version": 2,
+            "policy_sources": source_inputs(),
+            "image_policy_sha256": digest(merged / 'usr/lib/toucharium/image-policy.json'),
             "compressor": "mkfs.erofs lz4hc,9",
             "compressor_sha256": digest(Path(shutil.which("mkfs.erofs"))),
             "image": output.name,

@@ -13,6 +13,8 @@ struct EmulatorSettingsView: View {
     @State private var backgroundLimitMinutes: Int
     @State private var selectedKeyboardSource: String
     private let keyboardSource: Binding<String>?
+    @State private var selectedShellMode: String
+    private let shellMode: Binding<String>?
 
     private let maximumVCPUCount: Int
     private let defaults: UserDefaults
@@ -37,10 +39,14 @@ struct EmulatorSettingsView: View {
         defaults: UserDefaults = .standard,
         physicalProcessorCount: Int = EmulatorConfiguration.physicalProcessorCount,
         documentsDirectory: URL = RootfsImage.documentsDirectory,
-        keyboardSource: Binding<String>? = nil
+        keyboardSource: Binding<String>? = nil,
+        supportedRootfsNames: [String]? = nil,
+        shellMode: Binding<String>? = nil
     ) {
         self.keyboardSource = keyboardSource
         _selectedKeyboardSource = State(initialValue: keyboardSource?.wrappedValue ?? "ios")
+        self.shellMode = shellMode
+        _selectedShellMode = State(initialValue: shellMode?.wrappedValue ?? "phone")
         let loaded = EmulatorConfiguration.load(
             defaults: defaults,
             physicalProcessorCount: physicalProcessorCount,
@@ -54,10 +60,10 @@ struct EmulatorSettingsView: View {
         let availableRootfsFilenames = RootfsImage.availableFilenames(
             in: documentsDirectory
         )
-        self.rootfsFilenames = availableRootfsFilenames.contains(
+        self.rootfsFilenames = supportedRootfsNames ?? (availableRootfsFilenames.contains(
             loaded.rootfsFilename
         ) ? availableRootfsFilenames : [loaded.rootfsFilename] +
-            availableRootfsFilenames
+            availableRootfsFilenames)
         _configuration = State(initialValue: loaded)
         let background = BackgroundSettings(defaults: defaults)
         _backgroundMode = State(
@@ -159,6 +165,20 @@ struct EmulatorSettingsView: View {
                         .pickerStyle(.menu)
                         .accessibilityIdentifier("keyboardSourcePicker")
                         Text("Keyboard source applies when Toucharium is reopened.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if shellMode != nil {
+                    Section("Ubuntu Touch interface") {
+                        Picker("Interface mode", selection: $selectedShellMode) {
+                            Text("Phone mode").tag("phone")
+                            Text("Desktop windows").tag("desktop")
+                        }
+                        .pickerStyle(.menu)
+                        .accessibilityIdentifier("shellModePicker")
+                        Text("Desktop windows adds application title bars and window controls. The selected mode applies when Toucharium is reopened.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -321,6 +341,7 @@ struct EmulatorSettingsView: View {
     private func save() {
         configuration.save(defaults: defaults)
         keyboardSource?.wrappedValue = selectedKeyboardSource
+        shellMode?.wrappedValue = selectedShellMode
         let background = BackgroundSettings(defaults: defaults)
         background.setMode(
             backgroundMode,

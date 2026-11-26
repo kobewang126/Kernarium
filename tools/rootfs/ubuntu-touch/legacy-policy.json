@@ -1,0 +1,62 @@
+{
+  "etc/default/locale": [
+    "720b8af4e7aa54dfbd7ed888b1aae2aadf87bb7196c91b5a9005bad08a2c129d"
+  ],
+  "etc/default/lsc-wrapper.d/90-toucharium.conf": [
+    "3b6c0cfb0985c4362c9992720c3396f5b07e09fc7e8db6fee841b1285e210411"
+  ],
+  "etc/deviceinfo/default.yaml": [
+    "adec21294762f7fc92617139eb38cb36d8e7352baeb19eceda86425d7d125832"
+  ],
+  "etc/systemd/system/accounts-daemon.service.d/90-toucharium-locale.conf": [
+    "fe452766b17fad63a27f670ec13cbe7cc2f7c1093e32aefc2fcd8e3825e61a2e"
+  ],
+  "etc/systemd/system/lightdm.service.d/94-toucharium-gpu.conf": [
+    "9e9c15eef22aec55db269bd70bfb622003c52bedea39de08b7ce32ae7b011657"
+  ],
+  "etc/systemd/system/lightdm.service.d/95-toucharium-input.conf": [
+    "49d685a7014a781e171fd1897b675706e234355d8727482f5f469484d750d71c"
+  ],
+  "etc/systemd/system/toucharium-display.service": [
+    "83ed594e1098858a1a0b505c8081532d8703e860babbbe08d5cb90f5da092bd9"
+  ],
+  "etc/systemd/system/toucharium-gpu-policy.service": [
+    "b615ae0360f14f8237f5164d5ea82043b476a19d020388ddab5aafefb3aa32a8"
+  ],
+  "etc/systemd/system/toucharium-input.service": [
+    "c8236457296f77e248cf6482de591f13844d6c83e38ff2fbf4f74498834a638a"
+  ],
+  "etc/systemd/system/toucharium-locale.service": [
+    "70f08078f17ec263d2f9b2e344a7b03c38bf2430789ce490d9fc5441423180b6"
+  ],
+  "etc/systemd/user/lomiri-app-launch--application-.service.d/90-toucharium-renderer.conf": [
+    "246a0bc8c3cac9ca65ff8494befd8157fa3a055c9d6c83249c4c9458fc539c51"
+  ],
+  "etc/systemd/user/lomiri-full-greeter.service.d/99-toucharium-gpu.conf": [
+    "1ef96f5810980fe09f7be5f86dc1c24d7f28fda9886e3b9dac5cd7b1abe67a2e"
+  ],
+  "etc/toucharium/legacy-wayland.json": [
+    "25c2e8848e5568f9b272041d18bf101b00e4fe64ccd1cbe4a7ee6ade4bcfe133"
+  ],
+  "etc/toucharium/mesa.json": [
+    "0ac38c6002787131b83a5c040eab31589f8a45d01920dbe952d0b81e605a6949"
+  ],
+  "etc/ubuntu-touch-session.d/android.conf": [
+    "f68222d4f87af0382e91538c628c1e736476d120f9cf0f0a7b4f26c26e5d5efd"
+  ],
+  "etc/udev/rules.d/70-toucharium-virtual-devices.rules": [
+    "de673fa94a6cd5880194f2017200ec985497307e233db4ef1824be0c12db2e1c"
+  ],
+  "usr/libexec/toucharium-configure-gpu": [
+    "bbf9d44df201c564cfccf373c570e09fef2a69eb47b15763a280cf30626a9fa3"
+  ],
+  "usr/libexec/toucharium-configure-input": [
+    "66b2528bd2fe1dd1b59625a215a33f900319e6799bbe576d8bb6f0b191911c4e"
+  ],
+  "usr/libexec/toucharium-configure-locale": [
+    "b536e7e3511fc7a607d80b74ba37873974bc7ab5daa1face7e7f6b6669bd2ac0"
+  ],
+  "usr/share/apparmor/hardware/graphics.d/toucharium-virtio": [
+    "12615800e15664370e02bb2ef33d6a308ecfd87662f79bc17330722fa98e77f4"
+  ]
+}

@@ -3,6 +3,7 @@
 import Foundation
 import CryptoKit
 import Testing
+@testable import Kernarium
 
 /// A Designed for iPad launch ends with its hosted test run. This opt-in
 /// harness keeps the application alive for a bounded interactive guest run.
@@ -24,25 +25,13 @@ struct TouchariumRunTests {
             defer { session.invalidateAndCancel() }
             let (temporary, response) = try await session.download(from: url)
             try #require((response as? HTTPURLResponse)?.statusCode == 200)
-            let destination = documents.appendingPathComponent(
-                "ubuntu-touch-pdk-470-r2.erofs"
+            let image = temporary.appendingPathExtension("erofs")
+            try FileManager.default.moveItem(at: temporary, to: image)
+            defer { try? FileManager.default.removeItem(at: image) }
+            let descriptor = try TouchariumImageDescriptor.load()
+            let destination = try TouchariumImage.install(
+                from: image, descriptor: descriptor, into: documents
             )
-            let existing = FileManager.default.fileExists(atPath: destination.path)
-            let image = existing ? destination : temporary
-            let file = try FileHandle(forReadingFrom: image)
-            defer { try? file.close() }
-            var digest = SHA256()
-            while let chunk = try file.read(upToCount: 4 << 20), !chunk.isEmpty {
-                digest.update(data: chunk)
-            }
-            let fingerprint = digest.finalize().map {
-                String(format: "%02x", $0)
-            }.joined()
-            try #require(fingerprint ==
-                "e156ff638bd6317096e321b7c8f8a59260b9065559a65218057611b861bb4244")
-            if !existing {
-                try FileManager.default.moveItem(at: temporary, to: destination)
-            }
             print("TOUCHARIUM_IMAGE_STAGED:\(destination.path)")
             return
         }

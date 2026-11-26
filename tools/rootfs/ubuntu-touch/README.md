@@ -16,23 +16,40 @@ both the system compositor and Lomiri's nested Mir server after LightDM
 activates input devices, and runs again when LightDM restarts.
 Failed mapping attempts retry with a bounded timeout per attempt, including
 when Mir discovers input devices late during the first session.
-The input policy is embedded in the image and its digest is recorded in the
-image receipt. `build-policy.py` packages the same policy with the pinned Qt
-native Mir GPU configuration and a version-pinned Mesa compatibility library into a newc
-archive. It verifies the library receipt and uses `uml-initramfs` to generate
-the archive without network access. Toucharium embeds it and supplies it on
-ordinary boots, so an installed application's policy can update an existing
-persistent overlay before the Ubuntu session starts.
+The version 2 EROFS image embeds the fixed runtime policy, guest keyboard
+implementation, native Mir GPU compatibility library and default display
+patch. Its receipt identifies all producer inputs and the immutable policy
+manifest. `derive.py` verifies the compatibility artifact before installation.
+`build-policy.py --mode dynamic` packages only the selected keyboard and shell modes and
+migration bootstrap; the application appends its display-density override.
+The full archive mode remains available for policy verification.
+
+The image's managed-file manifest records current digests and the recognized
+1.1 policy digests in `legacy-policy.json`. Before systemd starts, migration
+verifies all immutable source files, backs up and replaces recognized old
+policy files through the merged filesystem, and preserves unknown custom
+contents and writable-path symbolic links. It never edits the raw upper layer behind overlayfs, clears user
+data, or resets the overlay. Migration results and backups stay in the guest's
+`/var/lib/toucharium/migrations` directory. Repeating a completed migration does
+not rewrite guest files. Completion is published atomically after file writes
+are synchronized; an incomplete completion record is recovered on the next boot.
+
 The graphics startup service checks the guest Mesa library digests, removes
 only unchanged client plugins installed by the legacy policy, and reloads
 application access to the virtual GPU device information. System Wayland
 libraries remain part of the image. The compatibility library temporarily
 completes the Mir platform image callbacks for the pinned Mesa ABI; its owner
 and canonical build entry point are in [`gpu-compat`](gpu-compat/README.md).
-The app policy selects iPhone or Ubuntu keyboard mode at boot.
+The app policy selects iPhone or Ubuntu keyboard mode at boot. Its user-service
+drop-in sets Lomiri to Staged or Windowed mode before the shell starts; the
+display archive selects the phone layout for Staged and a desktop device
+profile without a forced native orientation for Windowed. The mode-specific
+OrientedShell override preserves the explicit choice when pointer devices are
+added or removed, including on touch-only devices.
 `build-display-policy.py` packages display-density overrides separately from
 the plugins. The app appends the override matching the boot display density,
 keeping Lomiri's grid-unit and web-content density aligned with Retina.
+The display producer verifies the pinned Shell and OrientedShell sources.
 The display override checks the pinned rootfs's original Lomiri Shell digest
 and keeps its Units object at the selected grid unit when QtMir reports the
 virtual connector at native scale one. Mir's coordinates and application
@@ -55,15 +72,26 @@ archive and run the producer as root with erofs-utils installed:
 xz -dk ubuntu-touch-pdk-img-arm64.raw.xz
 sudo python3 tools/rootfs/ubuntu-touch/derive.py \
   --disk ubuntu-touch-pdk-img-arm64.raw \
-  --output /path/to/ubuntu-touch-pdk-470-r3.erofs \
+  --gpu-compat /path/to/verified-gpu-artifact \
+  --output /path/to/ubuntu-touch-pdk-470-v2-r3.erofs \
   --work-root /path/to/linux-work
+```
+
+`accept-image.py` verifies the completed image and current producer receipt
+before generating the application's import descriptor:
+
+```sh
+python3 tools/rootfs/ubuntu-touch/accept-image.py \
+  --image /path/to/ubuntu-touch-pdk-470-v2-r3.erofs \
+  --receipt /path/to/ubuntu-touch-pdk-470-v2-r3.erofs.json \
+  --catalog Toucharium/Sources/TouchariumImage.json
 ```
 
 The input remains read-only. The producer verifies its size and digest, applies
 the policy through overlayfs, checks the EROFS output and writes a receipt beside
-it. Existing outputs are refused. The generic boot ramdisk mounts the image and
-starts its own `/sbin/init`; the application's successful installation alone
-does not prove that the Ubuntu Touch session has booted.
+it. Existing outputs are refused. Image import verifies the accepted full-file
+SHA-256 before the application starts a guest; an imported image alone does not
+prove that the Ubuntu Touch session has booted.
 
 Upstream sources: [UBports PDK](https://github.com/ubports/ubports-pdk) and the
 [pinned rootfs build](https://ci.ubports.com/job/ubuntu-touch-rootfs/job/ubports%252F24.04-1.x/470/).

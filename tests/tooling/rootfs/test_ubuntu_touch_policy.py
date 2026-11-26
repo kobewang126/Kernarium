@@ -51,8 +51,30 @@ def main():
     from build import source_inputs
     configure = load('configure_gpu', args.producer / 'configure-gpu.py')
     locale_policy = load('configure_locale', args.producer / 'configure-locale.py')
+    migration = load('migrate_image', args.producer / 'migrate-image.py')
+    sys.path.insert(0, str(args.producer))
+    display = load('display_selection', args.producer / 'build-display-policy.py')
+    try:
+        display.render_mode(b'wrong upstream source', 'desktop')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('unverified usage mode source accepted')
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
+        selected = root / 'display-selection'
+        selected.mkdir()
+        display.install_selection(selected, 16, 'phone')
+        assert 'PrimaryOrientation: Portrait' in (selected / 'etc/deviceinfo/default.yaml').read_text()
+        display.install_selection(selected, 16, 'desktop')
+        device = (selected / 'etc/deviceinfo/default.yaml').read_text()
+        legacy = (selected / 'etc/ubuntu-touch-session.d/android.conf').read_text()
+        assert 'DeviceType: desktop' in device and 'GridUnit: 16' in device
+        assert 'Orientation' not in device and 'phone:' not in device
+        assert 'FORM_FACTOR=desktop' in legacy and 'NATIVE_ORIENTATION' not in legacy
+        assert 'QTWEBKIT_DPR=2' in legacy
+        display.install_selection(selected, 16, 'phone')
+        assert 'FORM_FACTOR=handset' in (selected / 'etc/ubuntu-touch-session.d/android.conf').read_text()
         locale_file = root / 'locale'
         for original in ['#LANG=C.UTF-8\n', '', 'LANG=""\n']:
             locale_file.write_text(original)
@@ -108,6 +130,91 @@ def main():
         else:
             raise AssertionError('tampered library accepted')
         lib.write_bytes(library)
+        # The app's dynamic archive contains no fixed guest implementation.
+        for shell_mode, usage in [('phone', 'Staged'), ('desktop', 'Windowed')]:
+            dynamic = root / (shell_mode + '.cpio')
+            subprocess.run([sys.executable, '-B', str(args.producer / 'build-policy.py'),
+                            '--initramfs', str(args.initramfs), '--shell-mode', shell_mode,
+                            '--mode', 'dynamic', '--output', str(dynamic)], check=True, timeout=30)
+            dynamic_files = unpack(dynamic.read_bytes())
+            interface = 'payload/etc/systemd/user/lomiri-full-greeter.service.d/90-toucharium-interface.conf'
+            assert set(dynamic_files) == {'init', 'payload', 'payload/etc', 'payload/etc/toucharium',
+                                          'payload/etc/toucharium/keyboard-source', 'payload/usr',
+                                          'payload/usr/libexec', 'payload/usr/libexec/toucharium-boot',
+                                          'payload/etc/systemd', 'payload/etc/systemd/user',
+                                          'payload/etc/systemd/user/lomiri-full-greeter.service.d', interface}
+            unit = configparser.ConfigParser(interpolation=None)
+            unit.read_string(dynamic_files[interface].decode())
+            assert unit['Service']['ExecStartPre'].split() == [
+                '/usr/bin/gsettings', 'set', 'com.lomiri.Shell', 'usage-mode', usage]
+            subprocess.run(['/bin/sh', '-n'], input=dynamic_files['init'], check=True, timeout=10)
+            subprocess.run(['/bin/sh', '-n'], input=dynamic_files['payload/usr/libexec/toucharium-boot'],
+                           check=True, timeout=10)
+
+        lower, running = root / 'lower', root / 'running'
+        lower.mkdir()
+        running.mkdir()
+        managed = 'etc/example.conf'
+        custom = 'etc/custom.conf'
+        user_data = running / 'home/phablet/document'
+        user_data.parent.mkdir(parents=True)
+        user_data.write_bytes(b'keep user data')
+        files = {}
+        for name in [managed, custom]:
+            (lower / name).parent.mkdir(parents=True, exist_ok=True)
+            (lower / name).write_bytes(b'new policy')
+            (running / name).parent.mkdir(parents=True, exist_ok=True)
+            files[name] = {'sha256': migration.digest(b'new policy'), 'mode': 0o644,
+                           'previous_sha256': [migration.digest(b'old policy')]}
+        (running / managed).write_bytes(b'old policy')
+        (running / custom).write_bytes(b'custom policy')
+        manifest = lower / 'usr/lib/toucharium/image-policy.json'
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(json.dumps({'schema_version': 1, 'policy_version': 2, 'files': files}))
+        assert migration.migrate(running, lower) == [custom]
+        assert (running / managed).read_bytes() == b'new policy'
+        assert (running / custom).read_bytes() == b'custom policy'
+        assert user_data.read_bytes() == b'keep user data'
+        saved = list((running / 'var/lib/toucharium/migrations').glob('*/files/etc/example.conf'))
+        assert len(saved) == 1 and saved[0].read_bytes() == b'old policy'
+        assert migration.migrate(running, lower) == [custom]
+        marker = next((running / 'var/lib/toucharium/migrations').glob('*/complete.json'))
+        for damaged in ['', '{', '{}', '{"preserved": null}']:
+            marker.write_text(damaged)
+            assert migration.migrate(running, lower) == [custom]
+            assert json.loads(marker.read_text()) == {'preserved': [custom]}
+            assert saved[0].read_bytes() == b'old policy'
+            assert user_data.read_bytes() == b'keep user data'
+        marker.unlink()
+        (running / managed).unlink()
+        (running / managed).symlink_to(user_data)
+        assert set(migration.migrate(running, lower)) == {managed, custom}
+        assert (running / managed).is_symlink()
+        assert user_data.read_bytes() == b'keep user data'
+        marker.unlink()
+        (running / managed).unlink()
+        (running / 'etc').rename(running / 'redirected-etc')
+        (running / 'etc').symlink_to(running / 'redirected-etc', target_is_directory=True)
+        assert set(migration.migrate(running, lower)) == {managed, custom}
+        assert (running / 'etc').is_symlink()
+        assert (running / 'redirected-etc/custom.conf').read_bytes() == b'custom policy'
+        for invalid in ['../escape', '/etc/escape']:
+            try:
+                migration.resolve(running, invalid)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('unsafe migration path accepted')
+        (lower / managed).write_bytes(b'tampered')
+        fresh = root / 'fresh'
+        fresh.mkdir()
+        try:
+            migration.migrate(fresh, lower)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('tampered policy accepted')
+        assert list(fresh.iterdir()) == [], 'migration wrote before validating its inputs'
         receipt['inputs'] = {}
         (artifact / 'receipt.json').write_text(json.dumps(receipt))
         try:

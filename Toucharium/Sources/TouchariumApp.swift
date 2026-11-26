@@ -8,25 +8,17 @@ struct TouchariumApp: App {
         let documents = FileManager.default.urls(
             for: .documentDirectory, in: .userDomainMask
         )[0]
-        // Select a staged image on ordinary launches too, where the
-        // development launcher's temporary environment is absent.
+        // Resolve the verified import destination before the launcher snapshots settings.
         let preferences = UserDefaults.standard
         if preferences.integer(forKey: "toucharium.phoneDisplayPolicyVersion") < 2 {
             preferences.set(true, forKey: "emulator.retinaMode")
             preferences.set(true, forKey: "emulator.autoResizeGuest")
             preferences.set(2, forKey: "toucharium.phoneDisplayPolicyVersion")
         }
-        let selected = preferences.string(forKey: "emulator.rootfsFilename")
-        let bundledImage = Bundle.main.url(forResource: "UbuntuTouch", withExtension: "erofs")
-        let defaults = ["ubuntu-touch-pdk-470-r2.erofs", "ubuntu-touch-pdk-470-r1.erofs"]
-        if selected == nil || defaults.contains(selected ?? "") {
-            if let bundledImage {
-                preferences.set(bundledImage.lastPathComponent, forKey: "emulator.rootfsFilename")
-            } else if let staged = defaults.first(where: {
-                FileManager.default.fileExists(atPath: documents.appendingPathComponent($0).path)
-            }) {
-                preferences.set(staged, forKey: "emulator.rootfsFilename")
-            }
+        if let image = try? TouchariumImageDescriptor.load() {
+            // The launcher snapshots its configuration before import. Every
+            // accepted image is published under this stable, validated name.
+            preferences.set(image.filename, forKey: "emulator.rootfsFilename")
         }
         // Before any view: the display and the terminal compile Metal
         // pipelines as they are created, and that reads the shader cache.
@@ -55,9 +47,10 @@ struct TouchariumApp: App {
         EmulatorLauncher.shared.persistentOverlayDirectory = documents
             .appendingPathComponent("UbuntuTouch", isDirectory: true)
         EmulatorLauncher.shared.linuxAppArmor = true
-        EmulatorLauncher.shared.bundledLinuxImage = bundledImage
-        let policyName = (preferences.string(forKey: "toucharium.keyboardSource") ?? "ubuntu") == "ubuntu"
-            ? "TouchariumUbuntuKeyboardPolicy" : "TouchariumGuestPolicy"
+        let prefix = preferences.string(forKey: "toucharium.shellMode") == "desktop"
+            ? "TouchariumDesktop" : "Toucharium"
+        let policyName = prefix + ((preferences.string(forKey: "toucharium.keyboardSource") ?? "ubuntu") == "ubuntu"
+            ? "UbuntuKeyboardPolicy" : "GuestPolicy")
         guard let policy = Bundle.main.url(
             forResource: policyName, withExtension: "cpio"
         ) else {
@@ -70,7 +63,7 @@ struct TouchariumApp: App {
             // boot geometry so Retina and fractional native scales agree.
             let gridUnit = min(64, max(8, Int((Double(dotsPerInch) / 20).rounded())))
             guard let displayPolicy = Bundle.main.url(
-                forResource: "TouchariumDisplay\(gridUnit)", withExtension: "cpio"
+                forResource: "\(prefix)Display\(gridUnit)", withExtension: "cpio"
             ) else {
                 throw CocoaError(.fileNoSuchFile)
             }
@@ -93,8 +86,15 @@ struct TouchariumApp: App {
 
 private struct TouchariumRootView: View {
     @AppStorage("toucharium.keyboardSource") private var keyboardSource = "ubuntu"
+    @AppStorage("toucharium.shellMode") private var shellMode = "phone"
+    @StateObject private var image = TouchariumImageStore()
 
     var body: some View {
-        ContentView(controlsBelowGuest: true, keyboardSource: $keyboardSource)
+        if image.ready {
+            ContentView(controlsBelowGuest: true, keyboardSource: $keyboardSource,
+                        supportedRootfsNames: image.descriptor.map { [$0.filename] }, shellMode: $shellMode)
+        } else {
+            TouchariumImageView(store: image)
+        }
     }
 }

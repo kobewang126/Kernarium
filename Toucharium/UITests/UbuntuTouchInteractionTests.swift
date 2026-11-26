@@ -6,6 +6,65 @@ import XCTest
 /// guest response; completing the tap alone is not an interaction verdict.
 final class UbuntuTouchInteractionTests: XCTestCase {
     @MainActor
+    func testShellModeSelection() throws {
+        guard ProcessInfo.processInfo.environment["TOUCHARIUM_INTERACTION_PROBE"] == "1" else {
+            throw XCTSkip("requires an imported image")
+        }
+        let app = XCUIApplication(bundleIdentifier:
+            ProcessInfo.processInfo.environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
+        app.activate()
+        func picker() -> XCUIElement {
+            app.buttons["settingsButton"].tap()
+            let value = app.buttons["shellModePicker"]
+            let form = app.collectionViews.firstMatch
+            let header = app.navigationBars["Emulator settings"]
+            XCTAssertTrue(form.waitForExistence(timeout: 5))
+            for _ in 0..<10 {
+                let visible = value.exists && value.isHittable
+                    && value.frame.minY > header.frame.maxY + 8
+                    && value.frame.maxY < form.frame.maxY - 16
+                if visible { break }
+                let down = value.exists && value.frame.minY <= header.frame.maxY + 8
+                form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: down ? 0.4 : 0.7))
+                    .press(forDuration: 0.1, thenDragTo:
+                        form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: down ? 0.7 : 0.4)))
+            }
+            XCTAssertTrue(value.exists && value.isHittable)
+            return value
+        }
+        func select(_ name: String, save: Bool) {
+            picker().tap()
+            let choice = app.buttons[name]
+            XCTAssertTrue(choice.waitForExistence(timeout: 5), app.debugDescription)
+            choice.tap()
+            app.buttons[save ? "settingsSaveButton" : "Cancel"].tap()
+        }
+        select("Phone mode", save: true)
+        select("Desktop windows", save: false)
+        let unchanged = picker()
+        XCTAssertTrue((unchanged.label + String(describing: unchanged.value)).contains("Phone mode"))
+        app.buttons["Cancel"].tap()
+        select("Desktop windows", save: true)
+        let saved = picker()
+        XCTAssertTrue((saved.label + String(describing: saved.value)).contains("Desktop windows"))
+        app.buttons["Cancel"].tap()
+    }
+    @MainActor
+    func testExternalImageImportPrompt() throws {
+        guard ProcessInfo.processInfo.environment["TOUCHARIUM_EXTERNAL_IMAGE_TEST"] == "1" else {
+            throw XCTSkip("requires a fresh external-image installation")
+        }
+        let app = XCUIApplication(bundleIdentifier:
+            ProcessInfo.processInfo.environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
+        app.launch()
+        XCTAssertTrue(app.buttons["importSystemImageButton"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.descendants(matching: .any)["framebufferView"].exists)
+        app.buttons["importSystemImageButton"].tap()
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 10))
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["importSystemImageButton"].exists)
+    }
+    @MainActor
     private func selectKeyboard(_ name: String, in app: XCUIApplication, save: Bool = true) {
         app.buttons["settingsButton"].tap()
         let source = app.buttons["keyboardSourcePicker"]

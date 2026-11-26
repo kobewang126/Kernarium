@@ -2,20 +2,29 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 set -eu
 root=$(CDPATH= cd -- "$SRCROOT/.." && pwd)
-gpu_compat=${TOUCHARIUM_GPU_COMPAT_DIR:-"$root/.build/toucharium/gpu-compat"}
 initramfs=${TOUCHARIUM_INITRAMFS_TOOL:-"$root/.build/toucharium/config-tools/bin/uml-initramfs"}
 shell=${TOUCHARIUM_LOMIRI_SHELL:-"$root/.build/toucharium/lomiri-Shell.qml.original"}
-output="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TouchariumGuestPolicy.cpio"
-python3 -B "$root/tools/rootfs/ubuntu-touch/build-policy.py" \
-    --gpu-compat "$gpu_compat" --initramfs "$initramfs" \
-    --output "$output"
-python3 -B "$root/tools/rootfs/ubuntu-touch/build-policy.py" \
-    --gpu-compat "$gpu_compat" --initramfs "$initramfs" \
-    --keyboard-source ubuntu \
-    --output "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TouchariumUbuntuKeyboardPolicy.cpio"
+oriented_shell=${TOUCHARIUM_LOMIRI_ORIENTED_SHELL:-"$root/.build/toucharium/lomiri-OrientedShell.qml.original"}
+for interface in phone desktop; do
+    for keyboard in ios ubuntu; do
+        case "$interface:$keyboard" in
+            phone:ios) name=TouchariumGuestPolicy ;;
+            phone:ubuntu) name=TouchariumUbuntuKeyboardPolicy ;;
+            desktop:ios) name=TouchariumDesktopGuestPolicy ;;
+            desktop:ubuntu) name=TouchariumDesktopUbuntuKeyboardPolicy ;;
+        esac
+        python3 -B "$root/tools/rootfs/ubuntu-touch/build-policy.py" \
+            --initramfs "$initramfs" --mode dynamic \
+            --keyboard-source "$keyboard" --shell-mode "$interface" \
+            --output "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/$name.cpio"
+    done
+done
 
-python3 -B "$root/tools/rootfs/ubuntu-touch/build-display-policy.py" \
-    --initramfs "$initramfs" --lomiri-shell "$shell" \
-    --output-directory "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+for interface in phone desktop; do
+    python3 -B "$root/tools/rootfs/ubuntu-touch/build-display-policy.py" \
+        --initramfs "$initramfs" --lomiri-shell "$shell" --shell-mode "$interface" \
+        --lomiri-oriented-shell "$oriented_shell" \
+        --output-directory "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+done
 
 python3 -B "$SRCROOT/scripts/stage-system-image.py"

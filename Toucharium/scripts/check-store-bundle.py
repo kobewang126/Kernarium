@@ -38,8 +38,8 @@ def main() -> int:
         info = plistlib.loads((app / "Info.plist").read_bytes())
     except (OSError, ValueError) as error:
         parser.error(f"cannot read application Info.plist: {error}")
-    if info.get("UIDeviceFamily") != [1]:
-        problems.append("store configuration must target iPhone only")
+    if info.get("UIDeviceFamily") != [1, 2]:
+        problems.append("store configuration must target iPhone and iPad")
     if info.get("ITSAppUsesNonExemptEncryption") is not False:
         problems.append("declare the export-compliance encryption answer")
     for key in ("NSCameraUsageDescription", "NSMicrophoneUsageDescription"):

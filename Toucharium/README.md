@@ -18,7 +18,12 @@ for the next application launch; Save applies the selection and Cancel discards
 it. Ubuntu mode leaves text focus and dismissal
 to Lomiri; iPhone mode suppresses the guest keyboard.
 Ubuntu Touch keyboard mode is the default when no keyboard preference has been saved.
-Existing selections are preserved.
+Existing selections are preserved. Emulator Settings also selects Phone mode
+or Desktop windows; the latter gives Ubuntu applications window title bars
+and controls. Save applies the choice on the next application launch, and
+Cancel preserves the previous choice. Desktop mode selects a desktop device profile
+without the phone portrait constraint and retains the selected mode on
+touch-only devices. Both modes use the same external image.
 
 The application uses the original Toucharium mark in
 `Branding/Toucharium.svg`. From the repository root,
@@ -41,15 +46,19 @@ binary artifacts. Distributing them also requires the applicable notices and
 corresponding source for the exact versions they contain; the image producer
 and its input digests alone do not supply all guest package sources.
 
-The application selects the image produced by
-[`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md) on first
-launch. An optional bundled image is used directly from the read-only application bundle
-on a fresh install and replaces selections of the legacy staged PDK images;
-it is not copied into Documents. Otherwise put the image in Documents.
-Custom image selections are preserved. The generic Linux runtime starts the image's own systemd and
-LightDM session; it does not boot an Android ramdisk.
-Base images are attached as read-only host files, including inside a signed
-iOS application bundle; all guest writes go to the separate overlay.
+The application imports the versioned image produced by
+[`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md).
+The application bundle contains no root filesystem. On first launch a file
+picker imports the supported EROFS image into Documents, verifies its complete
+size and SHA-256 against `Sources/TouchariumImage.json`, and publishes it only
+after verification. Cancellation or a checksum mismatch discards the staging
+file. The installed image is excluded from device backups; the writable guest
+data remains in Documents/UbuntuTouch and survives application updates.
+Images whose installation receipt no longer matches their file metadata must
+be imported and verified again. CPU, display and keyboard preferences are preserved.
+The generic Linux runtime starts the image's own systemd and LightDM session;
+it does not boot an Android ramdisk. The base is read-only and guest writes
+use the separate overlay.
 
 ## Build and run
 
@@ -69,31 +78,32 @@ xcodebuild build \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-Set `TOUCHARIUM_BUNDLED_IMAGE` to the complete pinned PDK 470 r1 EROFS
-image when building an all-in-one application. Without it, stage an image in
-the application's Documents directory before launching. The opt-in interaction probes under `UITests` operate on
-the already booted guest. Their screenshots and guest response determine whether
-an interaction works; completing a synthetic tap alone does not prove it.
+The image producer accepts a verified image receipt into the application's
+import descriptor before building. `TOUCHARIUM_BUNDLED_IMAGE` is rejected.
+The opt-in interaction probes under `UITests` operate on the already booted
+guest. Screenshots and guest response determine whether an interaction works;
+completing a synthetic tap alone does not prove it.
 
 The command-line team setting also signs the Swift Package resource bundle.
 
 Simulator builds use the separately packaged software-rendering slices;
 Designed for iPad uses the device slices and their Metal graphics stack.
 Ubuntu Touch keeps its writable overlay in Documents/UbuntuTouch. Cover
-installations preserve it. The application selects AppArmor and includes a
-boot-policy archive that applies its portrait phone layout and touchscreen mapping
-before systemd starts. Applications use native Mir and VirGL; the guest
-graphics policy validates the pinned Mesa libraries before the session starts. The desktop
-keeps its existing renderer. Application updates replace this policy without
-replacing the rootfs or requiring an SSH session.
+installations preserve it. The image carries the portrait phone policy, input
+mapping, locale initialization, native Mir GPU compatibility library and
+application access policy. The application supplies the keyboard and interface selections,
+display-density override and a small migration bootstrap through CPIO.
+Before systemd starts, the bootstrap runs the immutable image's migration
+implementation. It validates the managed file manifest, replaces only known
+previous policy contents, keeps a backup of replaced files, and preserves
+unknown customizations and user data. Completed migrations are idempotent.
+Changing systemd policy therefore takes effect before units are loaded.
 
-The Xcode build stages this archive through `scripts/stage-guest-policy.sh`.
-Small display-policy archives override its layout for the actual boot density;
-the application combines the selected override with its keyboard policy.
-The display producer requires the original Lomiri Shell QML from the pinned
-rootfs and verifies its digest before generating shell overrides.
-It requires a verified guest GPU compatibility artifact, the CMake-built
-`uml-initramfs` host tool. The owning producer and package pin are in
+The Xcode build stages the dynamic archives through
+`scripts/stage-guest-policy.sh`. The display producer verifies the original
+pinned Lomiri Shell and OrientedShell before generating density and mode overrides. It uses the
+CMake-built `uml-initramfs` host tool. Image policy ownership, receipts and
+migration contracts are in
 [`tools/rootfs/ubuntu-touch`](../tools/rootfs/ubuntu-touch/README.md).
 
 For a local Mac test, the hosted harness can import the pinned image from a
@@ -105,7 +115,7 @@ container from another process.
 
 ## Store builds
 
-The scheme archives the iPhone-only `AppStore` configuration. Mac distribution
+The scheme archives the universal iPhone and iPad `AppStore` configuration. Mac distribution
 as Designed for iPhone or iPad is disabled for that configuration. It uses the store loader and
 runtime without JIT, console input, display mirroring or automation overrides;
 Picture in Picture is unavailable and the serial console is read-only in that
@@ -129,4 +139,4 @@ background mode.
 
 The App Store configuration alone does not establish release readiness: an
 archive must use accepted artifacts matching the archived inputs, and the
-bundled guest software requires its applicable notices and corresponding source.
+separately distributed guest software requires its applicable notices and corresponding source.

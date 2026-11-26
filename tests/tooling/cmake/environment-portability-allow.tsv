@@ -17,6 +17,7 @@ R1	tests/tooling/android/test_builder_lane.py	\"/home/build/\"	fixture for a par
 R2	tests/tooling/cmake/test_patch_series.py	dev@Mac\.local	fixture for a parser or validator
 R2	tests/tooling/network/slirp_forward_probe.cpp	192\.168\.64\.1	fixture for a parser or validator
 R3	Kernarium/Kernarium.xcodeproj/project.pbxproj	PRODUCT_BUNDLE_IDENTIFIER = com.imxieyi.Kernarium(?:Tests|UITests|Automation)?;	project signing identity
+R3	Toucharium/Toucharium.xcodeproj/project.pbxproj	PRODUCT_BUNDLE_IDENTIFIER = org\.toucharium\.app\.(?:tests|uitests|automation);	project signing identity
 R3	Kernarium/Runtime/CMakeLists.txt	MACOSX_FRAMEWORK_IDENTIFIER	project signing identity
 R3	dependencies/apple-static-framework/Info.plist.in	CFBundleIdentifier	project signing identity
 R3	Andarium/Andarium.xcodeproj/project.xcproj	"PRODUCT_BUNDLE_IDENTIFIER": "com.imxieyi.(?:andarium|Andarium(?:Preview|(?:UI)?Tests|Automation))"	project signing identity

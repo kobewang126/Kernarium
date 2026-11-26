@@ -10,10 +10,15 @@ struct ContentView: View {
     /// Touchscreen guests can reserve their entire display for edge gestures.
     let controlsBelowGuest: Bool
     var keyboardSource: Binding<String>?
+    var shellMode: Binding<String>?
+    let supportedRootfsNames: [String]?
 
-    init(controlsBelowGuest: Bool = false, keyboardSource: Binding<String>? = nil) {
+    init(controlsBelowGuest: Bool = false, keyboardSource: Binding<String>? = nil,
+         supportedRootfsNames: [String]? = nil, shellMode: Binding<String>? = nil) {
         self.controlsBelowGuest = controlsBelowGuest
         self.keyboardSource = keyboardSource
+        self.shellMode = shellMode
+        self.supportedRootfsNames = supportedRootfsNames
     }
 
     @StateObject private var serialConsole = SerialConsoleController()
@@ -133,7 +138,8 @@ struct ContentView: View {
             SceneCoverageReader { sceneCoversScreen = $0 }
         }
         .sheet(isPresented: $settingsPresented) {
-            EmulatorSettingsView(keyboardSource: keyboardSource)
+            EmulatorSettingsView(keyboardSource: keyboardSource,
+                                 supportedRootfsNames: supportedRootfsNames, shellMode: shellMode)
         }
         .onChange(of: keyboardSource?.wrappedValue) {
             framebufferKeyboardVisible = false

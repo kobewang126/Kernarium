@@ -679,7 +679,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
                 TOUCHARIUM_APP_BUNDLE_IDENTIFIER = org.toucharium.app;
 				PRODUCT_MODULE_NAME = Kernarium;
@@ -730,7 +730,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
                 TOUCHARIUM_APP_BUNDLE_IDENTIFIER = org.toucharium.app;
 				PRODUCT_MODULE_NAME = Kernarium;
@@ -758,7 +758,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					Accelerate,
@@ -794,7 +794,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					Accelerate,
@@ -829,7 +829,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -853,7 +853,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -877,7 +877,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.automation;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -901,7 +901,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/kernarium-xcframeworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.toucharium.app.automation;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1005,12 +1005,13 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportsDocumentBrowser = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				TOUCHARIUM_FRAMEWORK_DIRECTORY = "$(SRCROOT)/../.build/toucharium-app-store-xcframeworks";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TOUCHARIUM_APP_BUNDLE_IDENTIFIER)";
                 TOUCHARIUM_APP_BUNDLE_IDENTIFIER = org.toucharium.app;
 				PRODUCT_MODULE_NAME = Kernarium;
@@ -1025,7 +1026,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "../Kernarium/Kernarium/Kernarium-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = AppStore;
 		};
