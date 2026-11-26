@@ -122,6 +122,30 @@ FORM_FACTOR=handset
 
 def install_runtime_policy(root: Path, *, native_gpu: bool = False) -> None:
     install_display_policy(root)
+    # AccountsService's SetLanguage path needs a regional fallback. With the
+    # PDK's commented-out LANG it returns without replying to D-Bus, blocking
+    # Lomiri's synchronous language setter on the first session.
+    write(root, "etc/default/locale", '''# SPDX-License-Identifier: GPL-2.0-or-later
+LANG=C.UTF-8
+''')
+    write(root, "usr/libexec/toucharium-configure-locale",
+          (Path(__file__).resolve().parent / "configure-locale.py").read_text(), 0o755)
+    write(root, "etc/systemd/system/toucharium-locale.service", '''# SPDX-License-Identifier: GPL-2.0-or-later
+[Unit]
+Description=Ensure the default locale for AccountsService
+After=local-fs.target
+Before=accounts-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/toucharium-configure-locale
+RemainAfterExit=yes
+''')
+    write(root, "etc/systemd/system/accounts-daemon.service.d/90-toucharium-locale.conf", '''# SPDX-License-Identifier: GPL-2.0-or-later
+[Unit]
+Requires=toucharium-locale.service
+After=toucharium-locale.service
+''')
     write(root, "etc/udev/rules.d/70-toucharium-virtual-devices.rules", '''# SPDX-License-Identifier: GPL-2.0-or-later
 SUBSYSTEM=="drm", KERNEL=="card[0-9]*", GROUP="video", MODE="0660", TAG+="uaccess", TAG+="seat"
 SUBSYSTEM=="drm", KERNEL=="renderD[0-9]*", GROUP="render", MODE="0660", TAG+="uaccess"
@@ -136,17 +160,22 @@ export MIR_MESA_KMS_DISABLE_MODESET_PROBE=1
           (Path(__file__).resolve().parent / "configure-input.py").read_text(), 0o755)
     # Mir enumerates input devices after LightDM activates its user session.
     # A synchronous LightDM setup hook would prevent that activation.
+    # First-session device discovery can outlast one mapping attempt; retry
+    # without letting systemd's start limit permanently disable touch.
     write(root, "etc/systemd/system/toucharium-input.service", '''# SPDX-License-Identifier: GPL-2.0-or-later
 [Unit]
 Description=Configure the Toucharium virtual touchscreen
 Requires=lightdm.service
 After=lightdm.service
 PartOf=lightdm.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
 ExecStart=/usr/libexec/toucharium-configure-input
 TimeoutStartSec=140
+Restart=on-failure
+RestartSec=3
 RemainAfterExit=yes
 ''')
     write(root, "etc/systemd/system/lightdm.service.d/95-toucharium-input.conf", '''# SPDX-License-Identifier: GPL-2.0-or-later
@@ -163,7 +192,7 @@ After=repowerd.service lightdm.service
 PartOf=lightdm.service
 
 [Service]
-ExecStart=/usr/bin/repowerd-cli display on
+ExecStart=/usr/sbin/repowerd-cli display on
 Restart=on-failure
 RestartSec=1
 TimeoutStopSec=5

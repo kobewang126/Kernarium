@@ -155,6 +155,10 @@ final class UbuntuTouchInteractionTests: XCTestCase {
         let app = XCUIApplication(bundleIdentifier:
             environment["TOUCHARIUM_APP_ID"] ?? "org.toucharium.app")
         app.activate()
+        let toggle = app.buttons["displayModeButton"]
+        if toggle.waitForExistence(timeout: 5) && toggle.label == "Show framebuffer" {
+            toggle.tap()
+        }
         let display = app.descendants(matching: .any)["framebufferView"]
         XCTAssertTrue(display.waitForExistence(timeout: 15))
         if environment["TOUCHARIUM_SWIPE_RIGHT_EDGE"] == "1" {
@@ -165,7 +169,8 @@ final class UbuntuTouchInteractionTests: XCTestCase {
         }
         for name in ["before-touch", "after-touch"] {
             if name == "after-touch" {
-                display.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y)).tap()
+                let target = environment["TOUCHARIUM_SCREEN_TAP"] == "1" ? app : display
+                target.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y)).tap()
                 try await Task.sleep(for: .seconds(3))
             }
             let attachment = XCTAttachment(screenshot: app.screenshot())

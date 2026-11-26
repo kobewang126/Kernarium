@@ -3,6 +3,7 @@
 """Exercise Ubuntu Touch policy artifacts and conservative overlay migration."""
 from pathlib import Path
 import argparse
+import configparser
 import hashlib
 import importlib.util
 import json
@@ -49,8 +50,20 @@ def main():
     from artifact import read_artifact
     from build import source_inputs
     configure = load('configure_gpu', args.producer / 'configure-gpu.py')
+    locale_policy = load('configure_locale', args.producer / 'configure-locale.py')
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
+        locale_file = root / 'locale'
+        for original in ['#LANG=C.UTF-8\n', '', 'LANG=""\n']:
+            locale_file.write_text(original)
+            locale_policy.configure(locale_file)
+            assert locale_file.read_text().endswith('LANG=C.UTF-8\n')
+            installed = locale_file.read_bytes()
+            locale_policy.configure(locale_file)
+            assert locale_file.read_bytes() == installed
+        locale_file.write_text('LANG="de_DE.UTF-8"\n')
+        locale_policy.configure(locale_file)
+        assert locale_file.read_text() == 'LANG="de_DE.UTF-8"\n'
         artifact = root / 'artifact'
         (artifact / 'lib').mkdir(parents=True)
         library = bytearray(64)
@@ -70,6 +83,18 @@ def main():
                            check=True, timeout=30)
             files = unpack(output.read_bytes())
             assert files['payload/etc/toucharium/keyboard-source'].decode().strip() == mode
+            locale = dict(line.split('=', 1) for line in
+                          files['payload/etc/default/locale'].decode().splitlines()
+                          if line and not line.startswith('#'))
+            assert locale['LANG'] == 'C.UTF-8'
+            input_service = configparser.ConfigParser(interpolation=None)
+            input_service.read_string(files['payload/etc/systemd/system/toucharium-input.service'].decode())
+            assert input_service['Service']['Restart'] == 'on-failure'
+            assert input_service['Unit']['StartLimitIntervalSec'] == '0'
+            assert int(input_service['Service']['TimeoutStartSec']) > 135
+            display_service = configparser.ConfigParser(interpolation=None)
+            display_service.read_string(files['payload/etc/systemd/system/toucharium-display.service'].decode())
+            assert display_service['Service']['ExecStart'] == '/usr/sbin/repowerd-cli display on'
             renderer = files['payload/etc/systemd/user/lomiri-app-launch--application-.service.d/90-toucharium-renderer.conf']
             assert b'QT_QPA_PLATFORM=ubuntumirclient' in renderer
             assert b'LIBGL_ALWAYS_SOFTWARE=0' in renderer

@@ -7,9 +7,15 @@ removes PDK-specific host mounts and boot-partition UUIDs and grants the
 phablet session access to the virtual graphics and input devices.
 DeviceInfo identifies the virtual device as a portrait phone; the legacy
 session configuration carries the same phone policy.
+The system locale defaults to C.UTF-8 so AccountsService can complete the
+first language selection; the selected user's locale remains in their home.
+An AccountsService prerequisite restores a missing default after local
+filesystems are mounted and preserves an existing locale selection.
 The input service maps the virtual touchscreen to the active display wall in
 both the system compositor and Lomiri's nested Mir server after LightDM
 activates input devices, and runs again when LightDM restarts.
+Failed mapping attempts retry with a bounded timeout per attempt, including
+when Mir discovers input devices late during the first session.
 The input policy is embedded in the image and its digest is recorded in the
 image receipt. `build-policy.py` packages the same policy with the pinned Qt
 native Mir GPU configuration and a version-pinned Mesa compatibility library into a newc
