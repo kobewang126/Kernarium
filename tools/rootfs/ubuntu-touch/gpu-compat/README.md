@@ -14,7 +14,8 @@ python3 tools/rootfs/ubuntu-touch/gpu-compat/build.py --output /path/to/artifact
 ```
 
 The output contains the library and a receipt identifying its source inputs
-and digest. `build-policy.py --gpu-compat` verifies both before packaging.
-Toucharium selects it with `TOUCHARIUM_GPU_COMPAT_DIR`; its default is
-`.build/toucharium/gpu-compat`. Source or pin changes require a rebuilt artifact.
+and digest. The image producer verifies both before installation into EROFS;
+the full `build-policy.py --gpu-compat` mode also verifies them.
+`../package.py` builds this artifact locally or accepts an existing verified
+artifact with `--gpu-compat`. Source or pin changes require a rebuilt artifact.
 The library runs inside the Linux guest and does not alter iOS libraries.

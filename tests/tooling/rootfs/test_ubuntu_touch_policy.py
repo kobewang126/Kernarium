@@ -7,9 +7,12 @@ import configparser
 import hashlib
 import importlib.util
 import json
+import lzma
 import subprocess
+import shutil
 import sys
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 sys.dont_write_bytecode = True
@@ -41,6 +44,84 @@ def unpack(data):
     return result
 
 
+def check_local_packaging(producer: Path, root: Path):
+    package = load('local_package', producer / 'package.py')
+    information = subprocess.run([sys.executable, '-B', str(producer / 'package.py')],
+                                 check=True, capture_output=True, text=True, timeout=10)
+    pin = json.loads((producer / 'sources.json').read_text())['archive']
+    assert pin['url'] in information.stdout and pin['sha256'] in information.stdout
+    payload = b'official input fixture\n' * 1024
+    expected = hashlib.sha256(payload).hexdigest()
+    archive = root / 'disk.raw.xz'
+    archive.write_bytes(lzma.compress(payload))
+    disk = root / 'disk.raw'
+    package.decompress(archive, disk, len(payload), expected)
+    assert disk.read_bytes() == payload and archive.exists()
+    package.decompress(archive, disk, len(payload), expected)
+    rejected = root / 'rejected.raw'
+    for size, checksum in [(len(payload) - 1, expected), (len(payload), '0' * 64)]:
+        try:
+            package.decompress(archive, rejected, size, checksum)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('unverified raw disk was published')
+        assert not rejected.exists() and not list(root.glob('.raw-*'))
+
+
+def check_packaging_hosts(producer: Path, root: Path, artifact: Path):
+    root, artifact = root.resolve(), artifact.resolve()
+    package = load('package_hosts', producer / 'package.py')
+    import derive
+    source = root / 'package-source'
+    source.mkdir()
+    raw = root / 'host-fixture.raw'
+    raw.write_bytes(b'verified offline input')
+    pin = json.loads((producer / 'sources.json').read_text())
+    pin['disk']['size'] = raw.stat().st_size
+    pin['disk']['sha256'] = hashlib.sha256(raw.read_bytes()).hexdigest()
+    (source / 'sources.json').write_text(json.dumps(pin))
+    for architecture in ['aarch64', 'x86_64']:
+        for explicit in [True, False]:
+            work = root / f'package-{architecture}-{explicit}'
+            work.mkdir()
+            gpu = artifact if explicit else work / 'gpu-compat'
+            if not explicit:
+                shutil.copytree(artifact, gpu)
+            output = work / 'local.erofs'
+            arguments = ['package.py', '--disk', str(raw), '--work', str(work), '--output', str(output)]
+            if explicit:
+                arguments += ['--gpu-compat', str(gpu)]
+
+            def produce():
+                assert sys.argv[sys.argv.index('--disk') + 1] == str(raw)
+                assert sys.argv[sys.argv.index('--gpu-compat') + 1] == str(gpu)
+                output.write_bytes(b'producer fixture')
+                output.with_suffix('.erofs.json').write_text('{}')
+
+            def accept(command, **kwargs):
+                assert Path(command[2]).name == 'accept-image.py', 'guest code was compiled or executed'
+                assert command[command.index('--image') + 1] == str(output)
+                Path(command[command.index('--catalog') + 1]).write_text('{}')
+                return subprocess.CompletedProcess(command, 0)
+
+            with patch.object(package, 'DIRECTORY', source), \
+                    patch.object(package.platform, 'system', return_value='Linux'), \
+                    patch.object(package.platform, 'machine', return_value=architecture), \
+                    patch.object(package.platform, 'libc_ver', return_value=('glibc', '2.43')), \
+                    patch.object(package.os, 'geteuid', return_value=0), \
+                    patch.object(package.shutil, 'disk_usage', return_value=SimpleNamespace(free=64 << 30)), \
+                    patch.object(package.shutil, 'which', side_effect=lambda name:
+                                 '/tool/' + name if name in ['mount', 'umount', 'mkfs.erofs', 'fsck.erofs'] else None), \
+                    patch.object(derive, 'main', side_effect=produce), \
+                    patch.object(package.subprocess, 'run', side_effect=accept) as commands, \
+                    patch.object(sys, 'argv', arguments):
+                package.main()
+                assert commands.call_count == 1
+            assert raw.read_bytes() == b'verified offline input'
+            assert output.exists() and output.with_suffix('.erofs.import.json').exists()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--producer', type=Path, required=True)
@@ -62,6 +143,7 @@ def main():
         raise AssertionError('unverified usage mode source accepted')
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
+        check_local_packaging(args.producer, root)
         selected = root / 'display-selection'
         selected.mkdir()
         display.install_selection(selected, 16, 'phone')
@@ -130,6 +212,7 @@ def main():
         else:
             raise AssertionError('tampered library accepted')
         lib.write_bytes(library)
+        check_packaging_hosts(args.producer, root, artifact)
         # The app's dynamic archive contains no fixed guest implementation.
         for shell_mode, usage in [('phone', 'Staged'), ('desktop', 'Windowed')]:
             dynamic = root / (shell_mode + '.cpio')

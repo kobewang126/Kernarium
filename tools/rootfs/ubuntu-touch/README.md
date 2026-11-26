@@ -65,17 +65,39 @@ them. Their binary distribution requires the applicable notices and exact
 corresponding sources. The upstream image digest is an input identity, not a
 substitute for those sources.
 
-`sources.json` pins the official archive and raw disk. On Linux, decompress the
-archive and run the producer as root with erofs-utils installed:
+`sources.json` pins the official archive and raw disk. Running `package.py`
+without an input prints the official download URL and archive SHA-256, including
+on macOS. The user downloads that file in their browser. Packaging then verifies
+the archive and decompressed disk, builds the guest GPU compatibility library,
+and invokes the image producer. The script does not access the network or modify
+the supplied input. Verified decompressed inputs are cached for later runs.
+
+Run on Ubuntu 24.04 arm64 as root, with Python 3, a C++20 compiler,
+CMake 3.27 or newer, Ninja and erofs-utils installed:
 
 ```sh
-xz -dk ubuntu-touch-pdk-img-arm64.raw.xz
-sudo python3 tools/rootfs/ubuntu-touch/derive.py \
-  --disk ubuntu-touch-pdk-img-arm64.raw \
-  --gpu-compat /path/to/verified-gpu-artifact \
-  --output /path/to/ubuntu-touch-pdk-470-v2-r3.erofs \
-  --work-root /path/to/linux-work
+sudo python3 tools/rootfs/ubuntu-touch/package.py \
+  --archive /path/to/ubuntu-touch-pdk-img-arm64.raw.xz \
+  --work /path/to/local-work \
+  --output /path/to/ubuntu-touch-local.erofs
 ```
+
+The first run needs space for the official raw disk plus packaging scratch;
+macOS requires a Linux VM. A work directory admits one packaging process at a
+time. Existing outputs are refused. The optional `--gpu-compat` reuses a
+verified ARM64 compatibility artifact and allows both ARM64 and x86-64 Linux
+build hosts without compiling or executing guest code. A verified artifact
+under the work directory's `gpu-compat` is reused automatically, including on
+x86-64 and on newer ARM64 distributions. The produced guest remains ARM64 on
+either host architecture. `--disk`
+accepts an already decompressed official input instead of an archive.
+`derive.py` remains the offline producer for already decompressed inputs.
+
+The output is the EROFS image, its producer receipt and an adjacent
+`.erofs.import.json` application descriptor. The current application accepts
+only its bundled descriptor: locally generated images require matching import
+support or an application build accepting that generated descriptor. Local
+repacking alone does not make an image accepted by an existing application.
 
 `accept-image.py` verifies the completed image and current producer receipt
 before generating the application's import descriptor:
